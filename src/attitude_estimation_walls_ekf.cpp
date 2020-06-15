@@ -33,7 +33,7 @@ class AttitudeEstimationWallsEKF{
 		void callbackLidarG(const geometry_msgs::Vector3StampedConstPtr& msg);
 		void predictionIMU(sensor_msgs::Imu imu, double dt);
 		void publication(ros::Time stamp);
-		void getRotMatrixRP(double r, double p, Eigen::Matrix2d& Rot);
+		void getRotMatrixRP(double r, double p, Eigen::MatrixXd& Rot);
 };
 
 AttitudeEstimationWallsEKF::AttitudeEstimationWallsEKF()
@@ -83,19 +83,20 @@ void AttitudeEstimationWallsEKF::callbackLidarG(const geometry_msgs::Vector3Stam
 void AttitudeEstimationWallsEKF::predictionIMU(sensor_msgs::Imu imu, double dt)
 {
 	/*u*/
-	Eigen::Vector2d u;
+	Eigen::Vector3d u;
 	u <<
 		imu.angular_velocity.x*dt,
-		imu.angular_velocity.y*dt;
+		imu.angular_velocity.y*dt,
+		imu.angular_velocity.z*dt;
 	/*f*/
-	Eigen::Matrix2d Rot;
+	Eigen::MatrixXd Rot(_x.size(), u.size());
 	getRotMatrixRP(_x(0), _x(1), Rot);
 	Eigen::VectorXd f = _x + Rot*u;
 	/*jF*/
 	Eigen::MatrixXd jF(_x.size(), _x.size());
-	jF(0, 0) = 1 + u(1)*cos(_x(0))*tan(_x(1));
-	jF(0, 1) = u(1)*sin(_x(0))/cos(_x(1))/cos(_x(1));
-	jF(1, 0) = -u(1)*sin(_x(0));
+	jF(0, 0) = 1 + u(1)*cos(_x(0))*tan(_x(1)) - u(2)*sin(_x(0))*tan(_x(1));
+	jF(0, 1) = u(1)*sin(_x(0))/cos(_x(1))/cos(_x(1)) + u(2)*cos(_x(0))/cos(_x(1))/cos(_x(1));
+	jF(1, 0) = -u(1)*sin(_x(0)) - u(2)*cos(_x(0));
 	jF(1, 1) = 1;
 	/*Q*/
 	Eigen::MatrixXd Q = _sigma_imu*Eigen::MatrixXd::Identity(_x.size(), _x.size());
@@ -119,11 +120,11 @@ void AttitudeEstimationWallsEKF::publication(ros::Time stamp)
 	std::cout << "r[deg]: " << _x(0) << " p[deg]: " << _x(1) << std::endl;
 }
 
-void AttitudeEstimationWallsEKF::getRotMatrixRP(double r, double p, Eigen::Matrix2d& Rot)
+void AttitudeEstimationWallsEKF::getRotMatrixRP(double r, double p, Eigen::MatrixXd& Rot)
 {
 	Rot <<
-		1,	sin(r)*tan(p),
-		0,	cos(r);
+		1,	sin(r)*tan(p),	cos(r)*tan(p),
+		0,	cos(r),			-sin(r);
 }
 
 int main(int argc, char** argv)
