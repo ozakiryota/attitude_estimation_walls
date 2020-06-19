@@ -24,7 +24,7 @@
 		<param name="th_flatness" type="double" value="1.0e-3"/>
 		<param name="th_assoc_squareddist" type="double" value="5.0e-1"/>
 		<param name="th_assoc_crossangle_deg" type="double" value="5.0"/>
-		<param name="th_angle_from_horizon_deg" type="double" value="5.0"/>
+		<param name="th_angle_from_horizon_deg" type="double" value="10.0"/>
 		<param name="th_clustering_angle_deg" type="double" value="10.0"/>
 		<param name="min_cluster_length" type="double" value="10.0"/>
 		<param name="th_anglediff_gnew_glast_deg" type="double" value="10.0"/>
@@ -32,19 +32,25 @@
 	<node pkg="attitude_estimation_walls" name="attitude_estimation_walls_ekf" type="attitude_estimation_walls_ekf" output="screen">
 	</node>
 
+	<!-- comparison -->
+	<node pkg="gyrodometry" name="gyrodometry3d" type="gyrodometry3d">
+		<param name="wait_inipose" type="bool" value="false"/>
+	</node>
+
 	<!-- for visualization -->
 	<node pkg="msg_conversion" name="combine_rp_y_linear" type="combine_rp_y_linear">
 		<remap from="/quat" to="/attitude"/>
 	</node>
-	<node pkg="pc_store" name="pc_store" type="pc_srore_with_odometry">
+	<node pkg="pc_store" name="pc_store_with_odometry" type="pc_store_with_odometry">
 		<remap from="/odom" to="/combined_odom"/>
 		<remap from="/cloud" to="/cloud/with_flatness"/>
 		<remap from="/cloud/stored" to="/cloud/with_flatness/stored"/>
-		<param name="limited_num_scans" type="int" value="200"/>
+		<param name="scan_limit" type="int" value="200"/>
 	</node>
-	<node pkg="pc_store" name="nc_srore_with_odometry" type="nc_srore_with_odometry">
+	<node pkg="pc_store" name="nc_store_with_odometry" type="pc_store_with_odometry">
 		<remap from="/odom" to="/combined_odom"/>
-		<param name="mode_limit_store" type="bool" value="false"/>
-		<param name="limited_num_scans" type="int" value="200"/>
+		<remap from="/cloud" to="/normals"/>
+		<remap from="/cloud/stored" to="/normals/stored"/>
+		<!-- <param name="scan_limit" type="int" value="200"/> -->
 	</node>
 </launch>

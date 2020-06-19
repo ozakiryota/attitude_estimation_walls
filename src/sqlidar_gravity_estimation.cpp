@@ -103,7 +103,7 @@ SQLidarPlanarNormalEstimation::SQLidarPlanarNormalEstimation(std::string laser_f
 	std::cout << " _th_assoc_squareddist = " <<  _th_assoc_squareddist << std::endl;
 	_nhPrivate.param("th_assoc_crossangle_deg", _th_assoc_crossangle_deg, 5.0);
 	std::cout << "_th_assoc_crossangle_deg = " << _th_assoc_crossangle_deg << std::endl;
-	_nhPrivate.param("th_angle_from_horizon_deg", _th_angle_from_horizon_deg, 5.0);
+	_nhPrivate.param("th_angle_from_horizon_deg", _th_angle_from_horizon_deg, 10.0);
 	std::cout << "_th_angle_from_horizon_deg = " << _th_angle_from_horizon_deg << std::endl;
 	_nhPrivate.param("th_clustering_angle_deg", _th_clustering_angle_deg, 10.0);
 	std::cout << "_th_clustering_angle_deg = " << _th_clustering_angle_deg << std::endl;

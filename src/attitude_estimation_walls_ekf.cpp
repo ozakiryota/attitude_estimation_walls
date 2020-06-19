@@ -26,12 +26,14 @@ class AttitudeEstimationWallsEKF{
 		/*parameter*/
 		std::string _frame_id;
 		double _sigma_imu;
+		double _sigma_lidarg;
 
 	public:
 		AttitudeEstimationWallsEKF();
 		void callbackIMU(const sensor_msgs::ImuConstPtr& msg);
 		void callbackLidarG(const geometry_msgs::Vector3StampedConstPtr& msg);
 		void predictionIMU(sensor_msgs::Imu imu, double dt);
+		void observationG(geometry_msgs::Vector3Stamped g);
 		void publication(ros::Time stamp);
 		void getRotMatrixRP(double r, double p, Eigen::MatrixXd& Rot);
 };
@@ -44,6 +46,8 @@ AttitudeEstimationWallsEKF::AttitudeEstimationWallsEKF()
 	std::cout << "_frame_id = " << _frame_id << std::endl;
 	_nhPrivate.param("sigma_imu", _sigma_imu, 1.0e-4);
 	std::cout << "_sigma_imu = " << _sigma_imu << std::endl;
+	_nhPrivate.param("sigma_lidarg", _sigma_lidarg, 1.0e-1);
+	std::cout << "_sigma_lidarg = " << _sigma_lidarg << std::endl;
 	/*sub*/
 	_sub_imu = _nh.subscribe("/imu/data", 1, &AttitudeEstimationWallsEKF::callbackIMU, this);
 	_sub_lidar_g = _nh.subscribe("/lidar_g", 1, &AttitudeEstimationWallsEKF::callbackLidarG, this);
@@ -78,6 +82,10 @@ void AttitudeEstimationWallsEKF::callbackIMU(const sensor_msgs::ImuConstPtr& msg
 
 void AttitudeEstimationWallsEKF::callbackLidarG(const geometry_msgs::Vector3StampedConstPtr& msg)
 {
+	/*observation*/
+	observationG(*msg);
+	/*publication*/
+	publication(msg->header.stamp);
 }
 
 void AttitudeEstimationWallsEKF::predictionIMU(sensor_msgs::Imu imu, double dt)
@@ -103,6 +111,36 @@ void AttitudeEstimationWallsEKF::predictionIMU(sensor_msgs::Imu imu, double dt)
 	/*Update*/
 	_x = f;
 	_P = jF*_P*jF.transpose() + Q;
+}
+
+void AttitudeEstimationWallsEKF::observationG(geometry_msgs::Vector3Stamped g_msg)
+{
+	/*z*/
+	Eigen::Vector3d z(g_msg.vector.x, g_msg.vector.y, g_msg.vector.z);
+	/*zp*/
+	const double g = -1.0;
+	Eigen::Vector3d zp(
+		-g*sin(_x(1)),
+		g*sin(_x(0))*cos(_x(1)),
+		g*cos(_x(0))*cos(_x(1))
+	);
+	/*jH*/
+	Eigen::MatrixXd jH(z.size(), _x.size());
+	jH <<
+		0.0,						-g*cos(_x(1)),				0.0,
+		g*cos(_x(0))*cos(_x(1)),	-g*sin(_x(0))*sin(_x(1)),	0.0,
+		-g*sin(_x(0))*cos(_x(1)),	-g*cos(_x(0))*sin(_x(1)),	0.0;
+	/*R*/
+	Eigen::MatrixXd R = _sigma_lidarg*Eigen::MatrixXd::Identity(z.size(), z.size());
+	/*I*/
+	Eigen::MatrixXd I = Eigen::MatrixXd::Identity(_x.size(), _x.size());
+	/*y, s, K*/
+	Eigen::Vector3d y = z - zp;
+	Eigen::MatrixXd S = jH*_P*jH.transpose() + R;
+	Eigen::MatrixXd K = _P*jH.transpose()*S.inverse();
+	/*update*/
+	_x = _x + K*y;
+	_P = (I - K*jH)*_P;
 }
 
 void AttitudeEstimationWallsEKF::publication(ros::Time stamp)
