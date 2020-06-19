@@ -117,7 +117,7 @@ void AttitudeEstimationWallsEKF::publication(ros::Time stamp)
 	q_msg.quaternion.w = q.w();
 	_pub_quat.publish(q_msg);
 	/*print*/
-	std::cout << "r[deg]: " << _x(0) << " p[deg]: " << _x(1) << std::endl;
+	/* std::cout << "r[deg]: " << _x(0) << " p[deg]: " << _x(1) << std::endl; */
 }
 
 void AttitudeEstimationWallsEKF::getRotMatrixRP(double r, double p, Eigen::MatrixXd& Rot)

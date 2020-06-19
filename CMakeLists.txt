@@ -10,7 +10,9 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   rospy
   std_msgs
+  tf
   Eigen3
+  PCL
 )
 
 ## System dependencies are found with CMake's conventions
@@ -119,6 +121,7 @@ catkin_package(
 include_directories(
   ${catkin_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIRS}
+  ${PCL_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
@@ -194,3 +197,5 @@ include_directories(
 add_executable(attitude_estimation_walls_ekf src/attitude_estimation_walls_ekf.cpp)
 target_link_libraries(attitude_estimation_walls_ekf ${catkin_LIBRARIES})
 #
+add_executable(sqlidar_gravity_estimation src/sqlidar_gravity_estimation.cpp)
+target_link_libraries(sqlidar_gravity_estimation ${catkin_LIBRARIES})
