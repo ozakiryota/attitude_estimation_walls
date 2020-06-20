@@ -83,11 +83,13 @@ class SQLidarPlanarNormalEstimation{
 		double angleBetweenVectors(const Eigen::Vector3d& v1, const Eigen::Vector3d& v2);
 		void flipToHalfSphere(Eigen::Vector3d& v);
 		void flipG(const Eigen::Vector3d& g_last, Eigen::Vector3d& g_new);
+		void printGToRP(const Eigen::Vector3d& g);
 };
 
 SQLidarPlanarNormalEstimation::SQLidarPlanarNormalEstimation(std::string laser_frame)
 	: _nhPrivate("~")
 {
+	std::cout << "--- sqlidar_gravity_estimation ---" << std::endl;
 	/*frame*/
 	_laser_frame = laser_frame;
 	/*parameter*/
@@ -419,6 +421,8 @@ bool SQLidarPlanarNormalEstimation::estimateG(void)
 		}
 	}
 	g_new.normalize();
+	/*print RP*/
+	printGToRP(g_new);
 	/*final judge*/
 	if(angleBetweenVectors(_g, g_new)/M_PI*180.0 < _th_anglediff_gnew_glast_deg){
 		_g = g_new;
@@ -537,6 +541,21 @@ void SQLidarPlanarNormalEstimation::flipG(const Eigen::Vector3d& g_last, Eigen::
 	const double th_flip_angle_deg = 90.0;
 	double angle = angleBetweenVectors(g_last, g_new);
 	if(angle/M_PI*180.0 > th_flip_angle_deg)	g_new *= -1;
+}
+
+void SQLidarPlanarNormalEstimation::printGToRP(const Eigen::Vector3d& g)
+{
+	Eigen::Vector3d inv_g = -g;
+	double r = atan2(inv_g(1), inv_g(2));
+	r = atan2(sin(r), cos(r));
+	double p = atan2(-inv_g(0), sqrt(inv_g(1)*inv_g(1) + inv_g(2)*inv_g(2)));
+	p = atan2(sin(p), cos(p));
+
+	std::cout
+		<< "r[deg]: " << r/M_PI*180.0
+		<< ", "
+		<< "p[deg]: " << p/M_PI*180.0
+	<< std::endl;
 }
 
 int main(int argc, char** argv)

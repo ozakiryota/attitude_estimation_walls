@@ -1,9 +1,11 @@
 <launch>
 	<!-- param -->
 	<param name="use_sim_time" value="true"/>
+	<param name="weights_path" type="str" value="$(find dnn_attitude_estimation)/weights.pth"/>
 
 	<!-- rosbag -->
-	<node pkg="rosbag" type="play" name="player" args="--clock /home/amsl/ozaki/bagfiles/sq2/outdoor_dkan/2018-12-11-13-37-56.bag -r 1"/>
+	<node pkg="rosbag" type="play" name="player" args="--clock /home/amsl/ozaki/bagfiles/sq2/outdoor_dkan/2018-12-11-13-37-56.bag"/>
+	<!-- <node pkg="rosbag" type="play" name="player" args="&#45;&#45;clock /home/amsl/ozaki/bagfiles/sq2/outdoor_dkan/2018&#45;12&#45;10&#45;18&#45;54&#45;19.bag"/> -->
 	
 	<!-- rviz -->
 	<node pkg="rviz" type="rviz" name="rviz" args="-d $(find attitude_estimation_walls)/rviz_config/attitude_estimation_walls.rviz"/>
@@ -14,27 +16,42 @@
 		<remap from="~/scan" to="/sq_lidar/scan"/>
 		<remap from="~/cloud" to="/cloud"/>
 	</node>
+	<node pkg="image_transport" type="republish" name="republish" args="compressed raw">
+		<remap from="in" to="/camera/color/image_raw"/>
+		<remap from="out" to="/decompressed_image"/>
+	</node>
+	<node pkg="gyrodometry" name="initial_alignment" type="initial_alignment" output="screen"/>
+
+	<!-- <!&#45;&#45; DNN in Docker &#45;&#45;> -->
+	<!-- <node pkg="dnn_attitude_estimation" name="prediction" type="prediction.py" output="screen"> -->
+	<!-- 	<remap from="/image_raw" to="/decompressed_image"/> -->
+	<!-- </node> -->
 
 	<!-- MAIN -->
 	<node pkg="attitude_estimation_walls" name="sqlidar_gravity_estimation" type="sqlidar_gravity_estimation" output="screen">
 		<remap from="/odom" to="/combined_odom"/>
 		<param name="pubmsg_frame" type="string" value="/combined_odom"/>
-		<param name="target_frame" type="string" value="/base_link"/>
-		<param name="curvature_region" type="int" value="5"/>
-		<param name="th_flatness" type="double" value="1.0e-3"/>
-		<param name="th_assoc_squareddist" type="double" value="5.0e-1"/>
-		<param name="th_assoc_crossangle_deg" type="double" value="5.0"/>
-		<param name="th_angle_from_horizon_deg" type="double" value="10.0"/>
-		<param name="th_clustering_angle_deg" type="double" value="10.0"/>
-		<param name="min_cluster_length" type="double" value="10.0"/>
-		<param name="th_anglediff_gnew_glast_deg" type="double" value="10.0"/>
+		<!-- <param name="target_frame" type="string" value="/base_link"/> -->
+		<!-- <param name="curvature_region" type="int" value="5"/> -->
+		<!-- <param name="th_flatness" type="double" value="1.0e&#45;3"/> -->
+		<!-- <param name="th_assoc_squareddist" type="double" value="5.0e&#45;1"/> -->
+		<!-- <param name="th_assoc_crossangle_deg" type="double" value="5.0"/> -->
+		<!-- <param name="th_angle_from_horizon_deg" type="double" value="10.0"/> -->
+		<!-- <param name="th_clustering_angle_deg" type="double" value="10.0"/> -->
+		<!-- <param name="min_cluster_length" type="double" value="10.0"/> -->
+		<!-- <param name="th_anglediff_gnew_glast_deg" type="double" value="10.0"/> -->
 	</node>
 	<node pkg="attitude_estimation_walls" name="attitude_estimation_walls_ekf" type="attitude_estimation_walls_ekf" output="screen">
+		<!-- <param name="wait_inipose" type="bool" value="true"/> -->
+		<!-- <param name="frame_id" type="string" value="/base_link"/> -->
+		<!-- <param name="sigma_ini" type="double" value="1.0e&#45;10"/> -->
+		<!-- <param name="sigma_imu" type="double" value="1.0e&#45;4"/> -->
+		<!-- <param name="sigma_lidarg" type="double" value="1.0e&#45;1"/> -->
 	</node>
 
 	<!-- comparison -->
 	<node pkg="gyrodometry" name="gyrodometry3d" type="gyrodometry3d">
-		<param name="wait_inipose" type="bool" value="false"/>
+		<!-- <param name="wait_inipose" type="bool" value="false"/> -->
 	</node>
 
 	<!-- for visualization -->
@@ -46,11 +63,11 @@
 		<remap from="/cloud" to="/cloud/with_flatness"/>
 		<remap from="/cloud/stored" to="/cloud/with_flatness/stored"/>
 		<param name="scan_limit" type="int" value="200"/>
+		<param name="downsampling" type="bool" value="true"/>
 	</node>
 	<node pkg="pc_store" name="nc_store_with_odometry" type="pc_store_with_odometry">
 		<remap from="/odom" to="/combined_odom"/>
 		<remap from="/cloud" to="/normals"/>
 		<remap from="/cloud/stored" to="/normals/stored"/>
-		<!-- <param name="scan_limit" type="int" value="200"/> -->
 	</node>
 </launch>
