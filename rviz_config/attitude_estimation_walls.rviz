@@ -25,7 +25,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: PointCloud2
+    SyncSource: ""
 Visualization Manager:
   Class: ""
   Displays:
@@ -54,23 +54,23 @@ Visualization Manager:
         All Enabled: true
         base_link:
           Value: true
-        battery_shell_link:
+        camera_color_frame:
           Value: true
-        battery_stage_link:
+        camera_color_optical_frame:
           Value: true
-        body_shell_link:
+        camera_depth_frame:
           Value: true
-        body_stage_link:
+        camera_depth_optical_frame:
           Value: true
-        camera1_link:
+        camera_infra1_frame:
           Value: true
-        camera2_link:
+        camera_infra1_optical_frame:
           Value: true
-        camera3_link:
+        camera_infra2_frame:
           Value: true
-        camera_base_link:
+        camera_infra2_optical_frame:
           Value: true
-        camera_shell_link:
+        camera_link:
           Value: true
         centerlaser_:
           Value: true
@@ -78,63 +78,11 @@ Visualization Manager:
           Value: true
         gyrodometry:
           Value: true
-        head_shell_link:
-          Value: true
-        joint_tool_inner_left_link:
-          Value: true
-        joint_tool_inner_right_link:
-          Value: true
-        joint_tool_outer_left_link:
-          Value: true
-        joint_tool_outer_right_link:
-          Value: true
-        laser1_link:
-          Value: true
-        laser2_link:
-          Value: true
-        laser3_link:
-          Value: true
-        mobility_link:
-          Value: true
-        mobility_shell_link:
-          Value: true
         odom:
           Value: true
         pillar_link:
           Value: true
-        shaft_left_link:
-          Value: true
-        shaft_right_link:
-          Value: true
-        urg1_link:
-          Value: true
-        urg2_link:
-          Value: true
-        urg3_link:
-          Value: true
-        urg_base1_link:
-          Value: true
-        urg_base2_link:
-          Value: true
-        urg_base3_link:
-          Value: true
-        wheel_cover_inner_left_back_link:
-          Value: true
-        wheel_cover_inner_left_front_link:
-          Value: true
-        wheel_cover_inner_right_back_link:
-          Value: true
-        wheel_cover_inner_right_front_link:
-          Value: true
-        wheel_cover_outer_left_back_link:
-          Value: true
-        wheel_cover_outer_left_front_link:
-          Value: true
-        wheel_cover_outer_right_back_link:
-          Value: true
-        wheel_cover_outer_right_front_link:
-          Value: true
-      Marker Scale: 1
+      Marker Scale: 10
       Name: TF
       Show Arrows: true
       Show Axes: true
@@ -142,40 +90,7 @@ Visualization Manager:
       Tree:
         odom:
           base_link:
-            mobility_link:
-              battery_shell_link:
-                {}
-              battery_stage_link:
-                body_stage_link:
-                  camera_base_link:
-                    camera1_link:
-                      {}
-                    camera2_link:
-                      {}
-                    camera3_link:
-                      {}
-                  centerlaser_:
-                    pillar_link:
-                      head_shell_link:
-                        {}
-                      urg_base1_link:
-                        urg1_link:
-                          laser1_link:
-                            {}
-                      urg_base2_link:
-                        urg2_link:
-                          laser2_link:
-                            {}
-                      urg_base3_link:
-                        urg3_link:
-                          laser3_link:
-                            {}
-              body_shell_link:
-                {}
-              camera_shell_link:
-                {}
-              mobility_shell_link:
-                {}
+            {}
           combined_odom:
             {}
           gyrodometry:

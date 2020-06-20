@@ -198,6 +198,7 @@ void AttitudeEstimationWallsEKF::observationG(geometry_msgs::Vector3Stamped g_ms
 {
 	/*z*/
 	Eigen::Vector3d z(g_msg.vector.x, g_msg.vector.y, g_msg.vector.z);
+	z.normalize();
 	std::cout << "z: " << z(0) << ", " << z(1) << ", " << z(2) << std::endl;
 	/*zp*/
 	const double g = -1.0;

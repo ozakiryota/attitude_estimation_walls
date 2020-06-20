@@ -4,8 +4,8 @@
 	<param name="weights_path" type="str" value="$(find dnn_attitude_estimation)/weights.pth"/>
 
 	<!-- rosbag -->
-	<node pkg="rosbag" type="play" name="player" args="--clock /home/amsl/ozaki/bagfiles/sq2/outdoor_dkan/2018-12-11-13-37-56.bag"/>
-	<!-- <node pkg="rosbag" type="play" name="player" args="&#45;&#45;clock /home/amsl/ozaki/bagfiles/sq2/outdoor_dkan/2018&#45;12&#45;10&#45;18&#45;54&#45;19.bag"/> -->
+	<!-- <node pkg="rosbag" type="play" name="player" args="&#45;&#45;clock /home/amsl/ozaki/bagfiles/sq2/outdoor_dkan/2018&#45;12&#45;11&#45;13&#45;37&#45;56.bag"/> -->
+	<node pkg="rosbag" type="play" name="player" args="--clock /home/amsl/ozaki/bagfiles/sq2/outdoor_dkan/2018-12-10-18-54-19.bag"/>
 	
 	<!-- rviz -->
 	<node pkg="rviz" type="rviz" name="rviz" args="-d $(find attitude_estimation_walls)/rviz_config/attitude_estimation_walls.rviz"/>
@@ -46,7 +46,8 @@
 		<!-- <param name="frame_id" type="string" value="/base_link"/> -->
 		<!-- <param name="sigma_ini" type="double" value="1.0e&#45;10"/> -->
 		<!-- <param name="sigma_imu" type="double" value="1.0e&#45;4"/> -->
-		<!-- <param name="sigma_lidarg" type="double" value="1.0e&#45;1"/> -->
+		<param name="sigma_lidar_g" type="double" value="1.0e-0"/>
+		<!-- <param name="sigma_camera_g" type="double" value="1.0e&#45;1"/> -->
 	</node>
 
 	<!-- comparison -->
