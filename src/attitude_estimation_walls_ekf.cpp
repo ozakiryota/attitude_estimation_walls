@@ -74,8 +74,8 @@ AttitudeEstimationWallsEKF::AttitudeEstimationWallsEKF()
 	_sub_inipose = _nh.subscribe("/initial_orientation", 1, &AttitudeEstimationWallsEKF::callbackIniPose, this);
 	_sub_imu = _nh.subscribe("/imu/data", 1, &AttitudeEstimationWallsEKF::callbackIMU, this);
 	_sub_bias = _nh.subscribe("/imu/bias", 1, &AttitudeEstimationWallsEKF::callbackBias, this);
-	_sub_lidar_g = _nh.subscribe("/lidar_g", 1, &AttitudeEstimationWallsEKF::callbackLidarG, this);
-	_sub_camera_g = _nh.subscribe("/camera_g", 1, &AttitudeEstimationWallsEKF::callbackCameraG, this);
+	_sub_lidar_g = _nh.subscribe("/lidar/g_vector", 1, &AttitudeEstimationWallsEKF::callbackLidarG, this);
+	_sub_camera_g = _nh.subscribe("/dnn/g_vector", 1, &AttitudeEstimationWallsEKF::callbackCameraG, this);
 	/*pub*/
 	_pub_quat = _nh.advertise<geometry_msgs::QuaternionStamped>("/attitude", 1);
 	/*initialize*/
@@ -88,6 +88,9 @@ void AttitudeEstimationWallsEKF::initializeState(void)
 	_P = _sigma_ini*Eigen::Matrix2d::Identity();
 
 	if(!_wait_inipose)	_got_inipose = true;
+
+	std::cout << "_x = " << std::endl << _x << std::endl;
+	std::cout << "_P = " << std::endl << _P << std::endl;
 }
 
 void AttitudeEstimationWallsEKF::callbackIniPose(const geometry_msgs::QuaternionStampedConstPtr& msg)
@@ -196,6 +199,8 @@ void AttitudeEstimationWallsEKF::predictionIMU(sensor_msgs::Imu imu, double dt)
 
 void AttitudeEstimationWallsEKF::observationG(geometry_msgs::Vector3Stamped g_msg, double sigma)
 {
+	std::cout << "_x = " << std::endl << _x << std::endl;
+	std::cout << "_P = " << std::endl << _P << std::endl;
 	/*z*/
 	Eigen::Vector3d z(g_msg.vector.x, g_msg.vector.y, g_msg.vector.z);
 	z.normalize();
@@ -210,10 +215,14 @@ void AttitudeEstimationWallsEKF::observationG(geometry_msgs::Vector3Stamped g_ms
 	std::cout << "zp: " << zp(0) << ", " << zp(1) << ", " << zp(2) << std::endl;
 	/*jH*/
 	Eigen::MatrixXd jH(z.size(), _x.size());
+	/* jH << */
+	/* 	0.0,						-g*cos(_x(1)),				0.0, */
+	/* 	g*cos(_x(0))*cos(_x(1)),	-g*sin(_x(0))*sin(_x(1)),	0.0, */
+	/* 	-g*sin(_x(0))*cos(_x(1)),	-g*cos(_x(0))*sin(_x(1)),	0.0; */
 	jH <<
-		0.0,						-g*cos(_x(1)),				0.0,
-		g*cos(_x(0))*cos(_x(1)),	-g*sin(_x(0))*sin(_x(1)),	0.0,
-		-g*sin(_x(0))*cos(_x(1)),	-g*cos(_x(0))*sin(_x(1)),	0.0;
+		0.0,						-g*cos(_x(1)),
+		g*cos(_x(0))*cos(_x(1)),	-g*sin(_x(0))*sin(_x(1)),
+		-g*sin(_x(0))*cos(_x(1)),	-g*cos(_x(0))*sin(_x(1));
 	/*R*/
 	Eigen::MatrixXd R = sigma*Eigen::MatrixXd::Identity(z.size(), z.size());
 	/*I*/

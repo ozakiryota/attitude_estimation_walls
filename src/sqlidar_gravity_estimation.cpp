@@ -121,7 +121,7 @@ SQLidarPlanarNormalEstimation::SQLidarPlanarNormalEstimation(std::string laser_f
 	_pub_plane = _nh.advertise<sensor_msgs::PointCloud2>("/cloud/plane", 1);
 	_pub_nc = _nh.advertise<sensor_msgs::PointCloud2>("/normals", 1);
 	_pub_gsphere = _nh.advertise<sensor_msgs::PointCloud2>("/gsphere", 1);
-	_pub_g = _nh.advertise<geometry_msgs::Vector3Stamped>("/lidar_g", 1);
+	_pub_g = _nh.advertise<geometry_msgs::Vector3Stamped>("/lidar/g_vector", 1);
 	/*viewer*/
 	_viewer.setBackgroundColor(1, 1, 1);
 	_viewer.addCoordinateSystem(0.5, "axis");
