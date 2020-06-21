@@ -4,8 +4,8 @@
 	<param name="weights_path" type="str" value="$(find dnn_attitude_estimation)/weights.pth"/>
 
 	<!-- rosbag -->
-	<!-- <node pkg="rosbag" type="play" name="player" args="&#45;&#45;clock /home/amsl/ozaki/bagfiles/sq2/outdoor_dkan/2018&#45;12&#45;11&#45;13&#45;37&#45;56.bag"/> -->
-	<node pkg="rosbag" type="play" name="player" args="--clock /home/amsl/ozaki/bagfiles/sq2/outdoor_dkan/2018-12-10-18-54-19.bag"/>
+	<node pkg="rosbag" type="play" name="player" args="--clock /home/amsl/ozaki/bagfiles/sq2/outdoor_dkan/2018-12-11-13-37-56.bag"/>
+	<!-- <node pkg="rosbag" type="play" name="player" args="&#45;&#45;clock /home/amsl/ozaki/bagfiles/sq2/outdoor_dkan/2018&#45;12&#45;10&#45;18&#45;54&#45;19.bag"/> -->
 	
 	<!-- rviz -->
 	<node pkg="rviz" type="rviz" name="rviz" args="-d $(find attitude_estimation_walls)/rviz_config/attitude_estimation_walls.rviz"/>
@@ -22,7 +22,7 @@
 	</node>
 	<node pkg="gyrodometry" name="initial_alignment" type="initial_alignment" output="screen"/>
 
-	<!-- <!&#45;&#45; DNN in Docker &#45;&#45;> -->
+	<!-- DNN in Docker -->
 	<!-- <node pkg="dnn_attitude_estimation" name="prediction" type="prediction.py" output="screen"> -->
 	<!-- 	<remap from="/image_raw" to="/decompressed_image"/> -->
 	<!-- </node> -->
@@ -56,8 +56,8 @@
 	</node>
 
 	<!-- for visualization -->
-	<node pkg="msg_conversion" name="combine_rp_y_linear" type="combine_rp_y_linear">
-		<remap from="/quat" to="/attitude"/>
+	<node pkg="msg_conversion" name="combine_orientation_linear" type="combine_orientation_linear">
+		<remap from="/orientation" to="/ekf/orientation"/>
 	</node>
 	<node pkg="pc_store" name="pc_store_with_odometry" type="pc_store_with_odometry">
 		<remap from="/odom" to="/combined_odom"/>
