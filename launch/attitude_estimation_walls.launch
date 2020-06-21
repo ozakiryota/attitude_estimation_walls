@@ -59,16 +59,27 @@
 	<node pkg="msg_conversion" name="combine_orientation_linear" type="combine_orientation_linear">
 		<remap from="/orientation" to="/ekf/orientation"/>
 	</node>
-	<node pkg="pc_store" name="pc_store_with_odometry" type="pc_store_with_odometry">
+	<!-- <node pkg="pc_store" name="pc_store_with_odometry" type="pc_store_with_odometry"> -->
+	<!-- 	<remap from="/odom" to="/combined_odom"/> -->
+	<!-- 	<remap from="/cloud" to="/cloud/with_flatness"/> -->
+	<!-- 	<remap from="/cloud/stored" to="/cloud/with_flatness/stored"/> -->
+	<!-- 	<param name="scan_limit" type="int" value="200"/> -->
+	<!-- 	<param name="downsampling" type="bool" value="true"/> -->
+	<!-- </node> -->
+	<!-- <node pkg="pc_store" name="nc_store_with_odometry" type="pc_store_with_odometry"> -->
+	<!-- 	<remap from="/odom" to="/combined_odom"/> -->
+	<!-- 	<remap from="/cloud" to="/normals"/> -->
+	<!-- 	<remap from="/cloud/stored" to="/normals/stored"/> -->
+	<!-- </node> -->
+	<node pkg="pc_store" name="pc_leave_with_odometry" type="pc_leave_with_odometry" output="screen">
 		<remap from="/odom" to="/combined_odom"/>
 		<remap from="/cloud" to="/cloud/with_flatness"/>
-		<remap from="/cloud/stored" to="/cloud/with_flatness/stored"/>
-		<param name="scan_limit" type="int" value="200"/>
+		<remap from="/cloud/leave" to="/cloud/with_flatness/stored"/>
 		<param name="downsampling" type="bool" value="true"/>
 	</node>
-	<node pkg="pc_store" name="nc_store_with_odometry" type="pc_store_with_odometry">
+	<node pkg="pc_store" name="nc_leave_with_odometry" type="pc_leave_with_odometry">
 		<remap from="/odom" to="/combined_odom"/>
 		<remap from="/cloud" to="/normals"/>
-		<remap from="/cloud/stored" to="/normals/stored"/>
+		<remap from="/cloud/leave" to="/normals/stored"/>
 	</node>
 </launch>
