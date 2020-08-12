@@ -14,6 +14,12 @@ find_package(catkin REQUIRED COMPONENTS
   Eigen3
   PCL
 )
+##### OpenMP #####
+find_package(OpenMP REQUIRED)
+if(OpenMP_FOUND)
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+endif()
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -199,3 +205,6 @@ target_link_libraries(attitude_estimation_walls_ekf ${catkin_LIBRARIES})
 #
 add_executable(sqlidar_gravity_estimation src/sqlidar_gravity_estimation.cpp)
 target_link_libraries(sqlidar_gravity_estimation ${catkin_LIBRARIES})
+#
+add_executable(wall_normal_estimation src/wall_normal_estimation.cpp)
+target_link_libraries(wall_normal_estimation ${catkin_LIBRARIES})

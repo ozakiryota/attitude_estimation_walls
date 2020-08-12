@@ -75,13 +75,13 @@ AttitudeEstimationWallsEKF::AttitudeEstimationWallsEKF()
 	std::cout << "_sigma_lidar_g = " << _sigma_lidar_g << std::endl;
 	_nhPrivate.param("sigma_camera_g", _sigma_camera_g, 1.0e-1);
 	std::cout << "_sigma_camera_g = " << _sigma_camera_g << std::endl;
-	/*sub*/
+	/*subscriber*/
 	_sub_inipose = _nh.subscribe("/initial_orientation", 1, &AttitudeEstimationWallsEKF::callbackIniPose, this);
 	_sub_imu = _nh.subscribe("/imu/data", 1, &AttitudeEstimationWallsEKF::callbackIMU, this);
 	_sub_bias = _nh.subscribe("/imu/bias", 1, &AttitudeEstimationWallsEKF::callbackBias, this);
 	_sub_lidar_g = _nh.subscribe("/lidar/g_vector", 1, &AttitudeEstimationWallsEKF::callbackLidarG, this);
 	_sub_camera_g = _nh.subscribe("/dnn/g_vector", 1, &AttitudeEstimationWallsEKF::callbackCameraG, this);
-	/*pub*/
+	/*publisher*/
 	_pub_attitude = _nh.advertise<geometry_msgs::QuaternionStamped>("/ekf/attitude", 1);
 	_pub_orientation = _nh.advertise<geometry_msgs::QuaternionStamped>("/ekf/orientation", 1);
 	/*initialize*/
