@@ -85,7 +85,7 @@ WallNormalEstimation::WallNormalEstimation()
 	/*publisher*/
 	_pub_nc = _nh.advertise<sensor_msgs::PointCloud2>("/normals", 1);
 	_pub_selected_nc = _nh.advertise<sensor_msgs::PointCloud2>("/normals/selected", 1);
-	_pub_selected_d_gsphere = _nh.advertise<sensor_msgs::PointCloud2>("/selected_d_gsphere", 1);
+	_pub_selected_d_gsphere = _nh.advertise<sensor_msgs::PointCloud2>("/d_gsphere/selected", 1);
 	/*viewer*/
 	_viewer.setBackgroundColor(1, 1, 1);
 	_viewer.addCoordinateSystem(1.0, "axis");
