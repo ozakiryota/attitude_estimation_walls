@@ -41,5 +41,6 @@
 	<node pkg="attitude_estimation_walls" name="dgsphere_to_gravity" type="dgsphere_to_gravity" output="screen">
 		<remap from="/cloud" to="/dgsphere/selected"/>
 		<remap from="/quat" to="/quat/from_odom"/>
+		<param name="min_num_cluster_members" type="int" value="20"/>
 	</node>
 </launch>
