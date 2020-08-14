@@ -1,5 +1,7 @@
 #include <ros/ros.h>
+#include <tf/tf.h>
 #include <sensor_msgs/PointCloud2.h>
+#include <geometry_msgs/QuaternionStamped.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -15,6 +17,7 @@ class WallNormalEstimation{
 		ros::NodeHandle _nhPrivate;
 		/*subscribe*/
 		ros::Subscriber _sub_pc;
+		ros::Subscriber _sub_quat;
 		/*publish*/
 		ros::Publisher _pub_nc;
 		ros::Publisher _pub_selected_nc;
@@ -44,13 +47,15 @@ class WallNormalEstimation{
 	public:
 		WallNormalEstimation();
 		void callbackPC(const sensor_msgs::PointCloud2ConstPtr &msg);
+		void callbackQuat(const geometry_msgs::QuaternionStampedConstPtr &msg);
 		void clearPC(void);
 		void computeNormal(void);
 		double getDepth(pcl::PointXYZ point);
 		std::vector<int> kdtreeSearch(pcl::PointXYZ searchpoint, double search_radius);
 		bool judgeForSelecting(const Eigen::Vector4f& plane_parameters, std::vector<int> indices);
-		double getAngleBetweenVectors(const Eigen::Vector3f& V1, const Eigen::Vector3f& V2);
+		double getAngleBetweenVectors(const Eigen::Vector3f& v1, const Eigen::Vector3f& v2);
 		double computeFittingError(const Eigen::Vector4f& N, std::vector<int> indices);
+		void quatToGravityVector(geometry_msgs::QuaternionStamped quat);
 		void visualization(void);
 		void publication(void);
 };
@@ -82,6 +87,7 @@ WallNormalEstimation::WallNormalEstimation()
 	std::cout << "_th_fitting_error = " << _th_fitting_error << std::endl;
 	/*subscriber*/
 	_sub_pc = _nh.subscribe("/cloud", 1, &WallNormalEstimation::callbackPC, this);
+	_sub_quat = _nh.subscribe("/quat", 1, &WallNormalEstimation::callbackQuat, this);
 	/*publisher*/
 	_pub_nc = _nh.advertise<sensor_msgs::PointCloud2>("/normals", 1);
 	_pub_selected_nc = _nh.advertise<sensor_msgs::PointCloud2>("/normals/selected", 1);
@@ -107,6 +113,11 @@ void WallNormalEstimation::callbackPC(const sensor_msgs::PointCloud2ConstPtr &ms
 
 	if(_mode_open_viewer)	visualization();
 	publication();
+}
+
+void WallNormalEstimation::callbackQuat(const geometry_msgs::QuaternionStampedConstPtr &msg)
+{
+	quatToGravityVector(*msg);
 }
 
 void WallNormalEstimation::clearPC(void)
@@ -215,9 +226,9 @@ bool WallNormalEstimation::judgeForSelecting(const Eigen::Vector4f& plane_parame
 	return true;
 }
 
-double WallNormalEstimation::getAngleBetweenVectors(const Eigen::Vector3f& V1, const Eigen::Vector3f& V2)
+double WallNormalEstimation::getAngleBetweenVectors(const Eigen::Vector3f& v1, const Eigen::Vector3f& v2)
 {
-	double angle = acos(V1.dot(V2)/V1.norm()/V2.norm());
+	double angle = acos(v1.dot(v2)/v1.norm()/v2.norm());
 	return angle;
 }
 
@@ -234,6 +245,17 @@ double WallNormalEstimation::computeFittingError(const Eigen::Vector4f& N, std::
 	}
 	ave_fitting_error /= (double)indices.size();
 	return ave_fitting_error;
+}
+
+void WallNormalEstimation::quatToGravityVector(geometry_msgs::QuaternionStamped quat)
+{
+	tf::Quaternion q_pose;
+	quaternionMsgToTF(quat.quaternion, q_pose);
+	tf::Quaternion q_gravity_global(0.0, 0.0, -1.0, 0.0);
+	tf::Quaternion q_gravity_local = q_pose.inverse()*q_gravity_global*q_pose;
+	_g_vector(0) = q_gravity_local.x();
+	_g_vector(1) = q_gravity_local.y();
+	_g_vector(2) = q_gravity_local.z();
 }
 
 void WallNormalEstimation::visualization(void)
