@@ -38,4 +38,8 @@
 		<param name="th_num_neighborpoints" type="int" value="10"/>
 		<param name="th_fitting_error" type="double" value="0.05"/>
 	</node>
+	<node pkg="attitude_estimation_walls" name="dgsphere_to_gravity" type="dgsphere_to_gravity" output="screen">
+		<remap from="/cloud" to="/dgsphere/selected"/>
+		<remap from="/quat" to="/quat/from_odom"/>
+	</node>
 </launch>

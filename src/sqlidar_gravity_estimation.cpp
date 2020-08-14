@@ -334,7 +334,7 @@ void SQLidarPlanarNormalEstimation::extractWall(void)
 	}
 }
 
-void SQLidarPlanarNormalEstimation::eraseSmallCluster()
+void SQLidarPlanarNormalEstimation::eraseSmallCluster(void)
 {
 	for(size_t i=0;i<_clusters.size();){
 		if(_clusters[i].norm() < _min_cluster_length)	_clusters.erase(_clusters.begin() + i);
@@ -450,7 +450,6 @@ bool SQLidarPlanarNormalEstimation::estimateG(void)
 		// exit(1);
 		return false;
 	}
-
 }
 
 void SQLidarPlanarNormalEstimation::publication(ros::Time stamp, bool g_is_available)

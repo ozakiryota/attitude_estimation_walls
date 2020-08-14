@@ -25,9 +25,9 @@ class WallNormalEstimation{
 		/*pcl*/
 		pcl::visualization::PCLVisualizer _viewer {"wall_normal_estimation"};
 		pcl::KdTreeFLANN<pcl::PointXYZ> _kdtree;
-		pcl::PointCloud<pcl::PointXYZ>::Ptr _cloud {new pcl::PointCloud<pcl::PointXYZ>};
-		pcl::PointCloud<pcl::PointNormal>::Ptr _normals {new pcl::PointCloud<pcl::PointNormal>};
-		pcl::PointCloud<pcl::PointNormal>::Ptr _selected_normals {new pcl::PointCloud<pcl::PointNormal>};
+		pcl::PointCloud<pcl::PointXYZ>::Ptr _pc {new pcl::PointCloud<pcl::PointXYZ>};
+		pcl::PointCloud<pcl::PointNormal>::Ptr _nc {new pcl::PointCloud<pcl::PointNormal>};
+		pcl::PointCloud<pcl::PointNormal>::Ptr _selected_nc {new pcl::PointCloud<pcl::PointNormal>};
 		pcl::PointCloud<pcl::PointXYZ>::Ptr _d_gsphere {new pcl::PointCloud<pcl::PointXYZ>};
 		pcl::PointCloud<pcl::PointXYZ>::Ptr _selected_d_gsphere {new pcl::PointCloud<pcl::PointXYZ>};
 		/*objects*/
@@ -91,7 +91,7 @@ WallNormalEstimation::WallNormalEstimation()
 	/*publisher*/
 	_pub_nc = _nh.advertise<sensor_msgs::PointCloud2>("/normals", 1);
 	_pub_selected_nc = _nh.advertise<sensor_msgs::PointCloud2>("/normals/selected", 1);
-	_pub_selected_d_gsphere = _nh.advertise<sensor_msgs::PointCloud2>("/d_gsphere/selected", 1);
+	_pub_selected_d_gsphere = _nh.advertise<sensor_msgs::PointCloud2>("/dgsphere/selected", 1);
 	/*viewer*/
 	_viewer.setBackgroundColor(1, 1, 1);
 	_viewer.addCoordinateSystem(1.0, "axis");
@@ -104,9 +104,9 @@ void WallNormalEstimation::callbackPC(const sensor_msgs::PointCloud2ConstPtr &ms
 {
 	/* std::cout << "CALLBACK PC" << std::endl; */
 
-	pcl::fromROSMsg(*msg, *_cloud);
+	pcl::fromROSMsg(*msg, *_pc);
 	std::cout << "==========" << std::endl;
-	std::cout << "_cloud->points.size() = " << _cloud->points.size() << std::endl;
+	std::cout << "_pc->points.size() = " << _pc->points.size() << std::endl;
 	clearPC();
 
 	computeNormal();
@@ -122,8 +122,8 @@ void WallNormalEstimation::callbackQuat(const geometry_msgs::QuaternionStampedCo
 
 void WallNormalEstimation::clearPC(void)
 {
-	_normals->points.clear();
-	_selected_normals->points.clear();
+	_nc->points.clear();
+	_selected_nc->points.clear();
 	_d_gsphere->points.clear();
 	_selected_d_gsphere->points.clear();
 }
@@ -134,62 +134,62 @@ void WallNormalEstimation::computeNormal(void)
 
 	double time_start = ros::Time::now().toSec();
 
-	_kdtree.setInputCloud(_cloud);
+	_kdtree.setInputCloud(_pc);
 
-	_normals->points.resize((_cloud->points.size()-1)/_skip + 1);
-	_d_gsphere->points.resize((_cloud->points.size()-1)/_skip + 1);
-	std::vector<bool> extract_indices((_cloud->points.size()-1)/_skip + 1, false);
+	_nc->points.resize((_pc->points.size()-1)/_skip + 1);
+	_d_gsphere->points.resize((_pc->points.size()-1)/_skip + 1);
+	std::vector<bool> extract_indices((_pc->points.size()-1)/_skip + 1, false);
 
 	#ifdef _OPENMP
 	#pragma omp parallel for
 	#endif
-	for(size_t i=0; i<_cloud->points.size(); i+=_skip){
+	for(size_t i=0; i<_pc->points.size(); i+=_skip){
 		size_t normal_index = i/_skip;
 		/*search neighbor points*/
-		double laser_distance = getDepth(_cloud->points[i]);
+		double laser_distance = getDepth(_pc->points[i]);
 		double search_radius = _search_radius_ratio*laser_distance;
 		if(search_radius < _min_search_radius)	search_radius = _min_search_radius;
 		// if(search_radius > _max_search_radius)	search_radius = _max_search_radius;
-		std::vector<int> indices = kdtreeSearch(_cloud->points[i], search_radius);
+		std::vector<int> indices = kdtreeSearch(_pc->points[i], search_radius);
 		/*compute normal*/
 		float curvature;
 		Eigen::Vector4f plane_parameters;
-		pcl::computePointNormal(*_cloud, indices, plane_parameters, curvature);
+		pcl::computePointNormal(*_pc, indices, plane_parameters, curvature);
 		/*judge*/
 		if(_mode_selection)	extract_indices[normal_index] = judgeForSelecting(plane_parameters, indices);
 		else	extract_indices[normal_index] = true;
 		/*input*/
-		_normals->points[normal_index].x = _cloud->points[i].x;
-		_normals->points[normal_index].y = _cloud->points[i].y;
-		_normals->points[normal_index].z = _cloud->points[i].z;
-		_normals->points[normal_index].data_n[0] = plane_parameters(0);
-		_normals->points[normal_index].data_n[1] = plane_parameters(1);
-		_normals->points[normal_index].data_n[2] = plane_parameters(2);
-		_normals->points[normal_index].data_n[3] = plane_parameters(3);
-		_normals->points[normal_index].curvature = curvature;
-		flipNormalTowardsViewpoint(_cloud->points[i], 0.0, 0.0, 0.0, _normals->points[normal_index].normal_x, _normals->points[normal_index].normal_y, _normals->points[normal_index].normal_z);
+		_nc->points[normal_index].x = _pc->points[i].x;
+		_nc->points[normal_index].y = _pc->points[i].y;
+		_nc->points[normal_index].z = _pc->points[i].z;
+		_nc->points[normal_index].data_n[0] = plane_parameters(0);
+		_nc->points[normal_index].data_n[1] = plane_parameters(1);
+		_nc->points[normal_index].data_n[2] = plane_parameters(2);
+		_nc->points[normal_index].data_n[3] = plane_parameters(3);
+		_nc->points[normal_index].curvature = curvature;
+		flipNormalTowardsViewpoint(_pc->points[i], 0.0, 0.0, 0.0, _nc->points[normal_index].normal_x, _nc->points[normal_index].normal_y, _nc->points[normal_index].normal_z);
 		/*Gauss map*/
-		_d_gsphere->points[normal_index].x = -fabs(_normals->points[normal_index].data_n[3])*_normals->points[normal_index].data_n[0];
-		_d_gsphere->points[normal_index].y = -fabs(_normals->points[normal_index].data_n[3])*_normals->points[normal_index].data_n[1];
-		_d_gsphere->points[normal_index].z = -fabs(_normals->points[normal_index].data_n[3])*_normals->points[normal_index].data_n[2];
+		_d_gsphere->points[normal_index].x = -fabs(_nc->points[normal_index].data_n[3])*_nc->points[normal_index].data_n[0];
+		_d_gsphere->points[normal_index].y = -fabs(_nc->points[normal_index].data_n[3])*_nc->points[normal_index].data_n[1];
+		_d_gsphere->points[normal_index].z = -fabs(_nc->points[normal_index].data_n[3])*_nc->points[normal_index].data_n[2];
 	}
 	if(_mode_selection){
 		for(size_t i=0; i<extract_indices.size(); i++){
 			if(extract_indices[i]){
 				/*selected normals*/
-				_selected_normals->points.push_back(_normals->points[i]);
+				_selected_nc->points.push_back(_nc->points[i]);
 				/*selected d-gaussian shpere*/
 				_selected_d_gsphere->points.push_back(_d_gsphere->points[i]);
 			}
 		}
 	}
 	else{
-		_selected_normals = _normals;
+		_selected_nc = _nc;
 		_selected_d_gsphere = _d_gsphere;
 	}
 
 	std::cout << "computation time [s] = " << ros::Time::now().toSec() - time_start << std::endl;
-	std::cout << "_selected_normals->points.size() = " << _selected_normals->points.size() << "(" << _selected_normals->points.size()/(double)_cloud->points.size()*100.0 << " %)" << std::endl;
+	std::cout << "_selected_nc->points.size() = " << _selected_nc->points.size() << "(" << _selected_nc->points.size()/(double)_pc->points.size()*100.0 << " %)" << std::endl;
 }
 
 double WallNormalEstimation::getDepth(pcl::PointXYZ point)
@@ -237,9 +237,9 @@ double WallNormalEstimation::computeFittingError(const Eigen::Vector4f& N, std::
 	double ave_fitting_error = 0.0;
 	for(size_t i=0; i<indices.size(); ++i){
 		Eigen::Vector3f P(
-			_cloud->points[indices[i]].x,
-			_cloud->points[indices[i]].y,
-			_cloud->points[indices[i]].z
+			_pc->points[indices[i]].x,
+			_pc->points[indices[i]].y,
+			_pc->points[indices[i]].z
 		);
 		ave_fitting_error += fabs(N.segment(0, 3).dot(P) + N(3))/N.segment(0, 3).norm();
 	}
@@ -263,17 +263,17 @@ void WallNormalEstimation::visualization(void)
 	_viewer.removeAllPointClouds();
 
 	/*cloud*/
-	_viewer.addPointCloud(_cloud, "_cloud");
-	_viewer.setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_COLOR, 0.0, 0.0, 0.0, "_cloud");
-	_viewer.setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "_cloud");
+	_viewer.addPointCloud(_pc, "_pc");
+	_viewer.setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_COLOR, 0.0, 0.0, 0.0, "_pc");
+	_viewer.setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "_pc");
 	/*normals*/
-	_viewer.addPointCloudNormals<pcl::PointNormal>(_normals, 1, 0.5, "_normals");
-	_viewer.setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_COLOR, 0.0, 0.0, 1.0, "_normals");
-	_viewer.setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_LINE_WIDTH, 1, "_normals");
+	_viewer.addPointCloudNormals<pcl::PointNormal>(_nc, 1, 0.5, "_nc");
+	_viewer.setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_COLOR, 0.0, 0.0, 1.0, "_nc");
+	_viewer.setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_LINE_WIDTH, 1, "_nc");
 	/*selected normals*/
-	_viewer.addPointCloudNormals<pcl::PointNormal>(_selected_normals, 1, 0.5, "_selected_normals");
-	_viewer.setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_COLOR, 0.0, 1.0, 1.0, "_selected_normals");
-	_viewer.setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_LINE_WIDTH, 1, "_selected_normals");
+	_viewer.addPointCloudNormals<pcl::PointNormal>(_selected_nc, 1, 0.5, "_selected_nc");
+	_viewer.setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_COLOR, 0.0, 1.0, 1.0, "_selected_nc");
+	_viewer.setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_LINE_WIDTH, 1, "_selected_nc");
 	/*d-gaussian sphere*/
 	_viewer.addPointCloud(_d_gsphere, "_d_gsphere");
 	_viewer.setPointCloudRenderingProperties (pcl::visualization::PCL_VISUALIZER_COLOR, 1.0, 1.0, 0.0, "_d_gsphere");
@@ -289,22 +289,22 @@ void WallNormalEstimation::visualization(void)
 void WallNormalEstimation::publication(void)
 {
 	/*normals*/
-	_normals->header.stamp = _cloud->header.stamp;
-	_normals->header.frame_id = _cloud->header.frame_id;
+	_nc->header.stamp = _pc->header.stamp;
+	_nc->header.frame_id = _pc->header.frame_id;
 	sensor_msgs::PointCloud2 nc_msg;
-	pcl::toROSMsg(*_normals, nc_msg);
+	pcl::toROSMsg(*_nc, nc_msg);
 	_pub_nc.publish(nc_msg);	
 	/*selected normals*/
 	if(_mode_selection){
-		_selected_normals->header.stamp = _cloud->header.stamp;
-		_selected_normals->header.frame_id = _cloud->header.frame_id;
+		_selected_nc->header.stamp = _pc->header.stamp;
+		_selected_nc->header.frame_id = _pc->header.frame_id;
 		sensor_msgs::PointCloud2 selected_nc_msg;
-		pcl::toROSMsg(*_selected_normals, selected_nc_msg);
+		pcl::toROSMsg(*_selected_nc, selected_nc_msg);
 		_pub_selected_nc.publish(selected_nc_msg);
 	}
 	/*selected d-gaussian sphere*/
-	_selected_d_gsphere->header.stamp = _cloud->header.stamp;
-	_selected_d_gsphere->header.frame_id = _cloud->header.frame_id;
+	_selected_d_gsphere->header.stamp = _pc->header.stamp;
+	_selected_d_gsphere->header.frame_id = _pc->header.frame_id;
 	sensor_msgs::PointCloud2 selected_gsphere_msg;
 	pcl::toROSMsg(*_selected_d_gsphere, selected_gsphere_msg);
 	_pub_selected_d_gsphere.publish(selected_gsphere_msg);

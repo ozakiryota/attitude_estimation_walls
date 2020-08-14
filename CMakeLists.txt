@@ -208,3 +208,6 @@ target_link_libraries(sqlidar_gravity_estimation ${catkin_LIBRARIES})
 #
 add_executable(wall_normal_estimation src/wall_normal_estimation.cpp)
 target_link_libraries(wall_normal_estimation ${catkin_LIBRARIES})
+#
+add_executable(dgsphere_to_gravity src/dgsphere_to_gravity.cpp)
+target_link_libraries(dgsphere_to_gravity ${catkin_LIBRARIES})
