@@ -26,6 +26,8 @@ class DgsphereToGravity{
 		/*clusters*/
 		std::vector<Eigen::Vector3d> _clusters;
 		std::vector<int> _num_cluster_members;
+		/*flag*/
+		bool _g_is_available = false;
 		/*visualization marker*/
 		visualization_msgs::MarkerArray _arrows;	//visualization
 		/*parameters*/
@@ -43,7 +45,7 @@ class DgsphereToGravity{
 		bool estimateG(void);
 		void flipG(const Eigen::Vector3d& g_last, Eigen::Vector3d& g_new);
 		void quatToGravityVector(geometry_msgs::QuaternionStamped quat);
-		void publication(std_msgs::Header header, bool g_is_available);
+		void publication(std_msgs::Header header);
 		void inputMarkerArray(std_msgs::Header header);
 		double getAngleBetweenVectors(const Eigen::Vector3d& v1, const Eigen::Vector3d& v2);
 };
@@ -87,12 +89,11 @@ void DgsphereToGravity::callbackPC(const sensor_msgs::PointCloud2ConstPtr &msg)
 
 	std::cout << "sum_num_cluster_members = " << sum_num_cluster_members << std::endl;
 	eraseSmallCluster();
-	bool g_is_available = estimateG();
+	_g_is_available = estimateG();
 	if(!_clusters.empty()){
 		inputMarkerArray(msg->header);
-		publication(msg->header, g_is_available);
+		publication(msg->header);
 	}
-
 }
 
 void DgsphereToGravity::callbackQuat(const geometry_msgs::QuaternionStampedConstPtr &msg)
@@ -200,12 +201,12 @@ void DgsphereToGravity::quatToGravityVector(geometry_msgs::QuaternionStamped qua
 	_g_vector(2) = q_gravity_local.z();
 }
 
-void DgsphereToGravity::publication(std_msgs::Header header, bool g_is_available)
+void DgsphereToGravity::publication(std_msgs::Header header)
 {
 	/*_arrows*/
 	_pub_markerarray.publish(_arrows);
 	/*_g_vector*/
-	if(g_is_available){
+	if(_g_is_available){
 		geometry_msgs::Vector3Stamped vector_msg;
 		vector_msg.header = header;
 		vector_msg.vector.x = _g_vector(0);
@@ -221,10 +222,14 @@ void DgsphereToGravity::inputMarkerArray(std_msgs::Header header)
 	visualization_msgs::Marker delete_markers;
 	delete_markers.action = visualization_msgs::Marker::DELETEALL;
 	_arrows.markers.push_back(delete_markers);
-	/*arrows*/
-	const double shaft_diameter = 0.5;
-	const double head_diameter = 0.6;
+	/*clustered dgsphere*/
+	const double shaft_diameter = 0.1;
+	const double head_diameter = 0.2;
 	// const double head_length = 1;
+	geometry_msgs::Point start;
+	start.x = 0.0;
+	start.y = 0.0;
+	start.z = 0.0;
 	for(size_t i=0; i<_clusters.size(); ++i){
 		visualization_msgs::Marker tmp;
 		tmp.header = header;
@@ -237,10 +242,6 @@ void DgsphereToGravity::inputMarkerArray(std_msgs::Header header)
 		// tmp.scale.z = head_length;
 		tmp.color.r = 1.0;
 		tmp.color.a = 1.0;
-		geometry_msgs::Point start;
-		start.x = 0.0;
-		start.y = 0.0;
-		start.z = 0.0;
 		geometry_msgs::Point end;
 		end.x = _clusters[i](0);
 		end.y = _clusters[i](1);
@@ -248,6 +249,26 @@ void DgsphereToGravity::inputMarkerArray(std_msgs::Header header)
 		tmp.points.push_back(start);
 		tmp.points.push_back(end);
 		_arrows.markers.push_back(tmp);
+	}
+	/*gravity*/
+	if(_g_is_available){
+		const double gravity_lengh = 10.0;
+		visualization_msgs::Marker gravity;
+		gravity.header = header;
+		gravity.ns = "gravity";
+		gravity.type = visualization_msgs::Marker::ARROW;
+		gravity.action = visualization_msgs::Marker::ADD;
+		gravity.scale.x = shaft_diameter;
+		gravity.scale.y = head_diameter;
+		gravity.color.g = 1.0;
+		gravity.color.a = 1.0;
+		geometry_msgs::Point end;
+		end.x = _g_vector(0)*gravity_lengh;
+		end.y = _g_vector(1)*gravity_lengh;
+		end.z = _g_vector(2)*gravity_lengh;
+		gravity.points.push_back(start);
+		gravity.points.push_back(end);
+		_arrows.markers.push_back(gravity);
 	}
 }
 

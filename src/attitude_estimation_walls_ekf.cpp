@@ -18,8 +18,8 @@ class AttitudeEstimationWallsEKF{
 		ros::Subscriber _sub_lidar_g;
 		ros::Subscriber _sub_camera_g;
 		/*publisher*/
-		ros::Publisher _pub_attitude;
-		ros::Publisher _pub_orientation;
+		ros::Publisher _pub_quat_rp;
+		ros::Publisher _pub_quat_rpy;
 		/*state*/
 		Eigen::Vector2d _x;
 		Eigen::Matrix2d _P;
@@ -82,8 +82,8 @@ AttitudeEstimationWallsEKF::AttitudeEstimationWallsEKF()
 	_sub_lidar_g = _nh.subscribe("/lidar/g_vector", 1, &AttitudeEstimationWallsEKF::callbackLidarG, this);
 	_sub_camera_g = _nh.subscribe("/dnn/g_vector", 1, &AttitudeEstimationWallsEKF::callbackCameraG, this);
 	/*publisher*/
-	_pub_attitude = _nh.advertise<geometry_msgs::QuaternionStamped>("/ekf/attitude", 1);
-	_pub_orientation = _nh.advertise<geometry_msgs::QuaternionStamped>("/ekf/orientation", 1);
+	_pub_quat_rp = _nh.advertise<geometry_msgs::QuaternionStamped>("/ekf/quat_rp", 1);
+	_pub_quat_rpy = _nh.advertise<geometry_msgs::QuaternionStamped>("/ekf/quat_rpy", 1);
 	/*initialize*/
 	initializeState();
 }
@@ -214,6 +214,7 @@ void AttitudeEstimationWallsEKF::predictionIMU(sensor_msgs::Imu imu, double dt)
 
 void AttitudeEstimationWallsEKF::observationG(geometry_msgs::Vector3Stamped g_msg, double sigma)
 {
+	/*print*/
 	std::cout
 		<< "r[deg]: " << _x(0)/M_PI*180.0
 		<< ", "
@@ -234,9 +235,6 @@ void AttitudeEstimationWallsEKF::observationG(geometry_msgs::Vector3Stamped g_ms
 	/*jH*/
 	Eigen::MatrixXd jH(z.size(), _x.size());
 	/* jH << */
-	/* 	0.0,						-g*cos(_x(1)),				0.0, */
-	/* 	g*cos(_x(0))*cos(_x(1)),	-g*sin(_x(0))*sin(_x(1)),	0.0, */
-	/* 	-g*sin(_x(0))*cos(_x(1)),	-g*cos(_x(0))*sin(_x(1)),	0.0; */
 	jH <<
 		0.0,						-g*cos(_x(1)),
 		g*cos(_x(0))*cos(_x(1)),	-g*sin(_x(0))*sin(_x(1)),
@@ -267,7 +265,7 @@ void AttitudeEstimationWallsEKF::publication(ros::Time stamp)
 	q_rp_msg.quaternion.y = q_rp.y();
 	q_rp_msg.quaternion.z = q_rp.z();
 	q_rp_msg.quaternion.w = q_rp.w();
-	_pub_attitude.publish(q_rp_msg);
+	_pub_quat_rp.publish(q_rp_msg);
 	/*RPY*/
 	tf::Quaternion q_rpy = tf::createQuaternionFromRPY(_x(0), _x(1), _yaw);
 	geometry_msgs::QuaternionStamped q_rpy_msg;
@@ -277,7 +275,7 @@ void AttitudeEstimationWallsEKF::publication(ros::Time stamp)
 	q_rpy_msg.quaternion.y = q_rpy.y();
 	q_rpy_msg.quaternion.z = q_rpy.z();
 	q_rpy_msg.quaternion.w = q_rpy.w();
-	_pub_orientation.publish(q_rpy_msg);
+	_pub_quat_rpy.publish(q_rpy_msg);
 	/*print*/
 	// std::cout << "r[deg]: " << _x(0) << " p[deg]: " << _x(1) << std::endl;
 }

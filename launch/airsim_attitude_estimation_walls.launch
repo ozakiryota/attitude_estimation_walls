@@ -17,20 +17,15 @@
 		<remap from="/cloud" to="/cloud/neu"/>
 		<param name="target_hz" type="double" value="20"/>
 	</node>
-
-	<!-- Ground truth pose -->
 	<node pkg="msg_conversion" type="ned_to_neu" name="ned_to_neu">
 		<remap from="/odom" to="/airsim_node/drone/odom_local_ned"/>
 		<remap from="/imu/data" to="/airsim_node/drone/imu/Imu"/>
-	</node>
-	<node pkg="msg_conversion" type="odometry_to_quaternionstamped" name="odometry_to_quaternionstamped">
-		<remap from="/odom" to="/odom/neu"/>
 	</node>
 
 	<!-- main -->
 	<node pkg="attitude_estimation_walls" name="wall_normal_estimation" type="wall_normal_estimation" output="screen">
 		<remap from="/cloud" to="/cloud/lower_hz"/>
-		<remap from="/quat" to="/quat/from_odom"/>
+		<remap from="/quat" to="/ekf/quat_rpy"/>
 		<!-- <param name="mode_open_viewer" type="bool" value="false"/> -->
 		<param name="skip" type="int" value="3"/>
 		<param name="search_radius_ratio" type="double" value="0.09"/>
@@ -40,7 +35,27 @@
 	</node>
 	<node pkg="attitude_estimation_walls" name="dgsphere_to_gravity" type="dgsphere_to_gravity" output="screen">
 		<remap from="/cloud" to="/dgsphere/selected"/>
-		<remap from="/quat" to="/quat/from_odom"/>
+		<remap from="/quat" to="/ekf/quat_rpy"/>
 		<param name="min_num_cluster_members" type="int" value="20"/>
+	</node>
+	<node pkg="attitude_estimation_walls" name="attitude_estimation_walls_ekf" type="attitude_estimation_walls_ekf" output="screen">
+		<remap from="/imu/data" to="/imu/data/neu"/>
+		<param name="wait_inipose" type="bool" value="false"/>
+		<param name="sigma_lidar_g" type="double" value="1.0e+4"/>
+	</node>
+
+	<!-- validation -->
+	<node pkg="msg_conversion" name="odometry_to_rpy" type="odometry_to_rpy">
+		<remap from="/odom" to="/odom/neu"/>
+		<remap from="/rpy" to="/gt/rpy"/>
+	</node>
+	<node pkg="msg_conversion" name="quatstamped_to_rpy" type="quatstamped_to_rpy">
+		<remap from="/quat" to="/ekf/quat_rpy"/>
+		<remap from="/rpy" to="/ekf/rpy"/>
+	</node>
+	<param name="erase_old_data" type="bool" value="False"/>
+	<node pkg="msg_printer" name="compare_rp" type="compare_rp.py">
+		<remap from="/truth/rpy" to="/gt/rpy"/>
+		<remap from="/estimation/rpy" to="/ekf/rpy"/>
 	</node>
 </launch>

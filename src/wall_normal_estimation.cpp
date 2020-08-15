@@ -102,10 +102,8 @@ WallNormalEstimation::WallNormalEstimation()
 
 void WallNormalEstimation::callbackPC(const sensor_msgs::PointCloud2ConstPtr &msg)
 {
-	/* std::cout << "CALLBACK PC" << std::endl; */
-
 	pcl::fromROSMsg(*msg, *_pc);
-	std::cout << "==========" << std::endl;
+	std::cout << "-----" << std::endl;
 	std::cout << "_pc->points.size() = " << _pc->points.size() << std::endl;
 	clearPC();
 
