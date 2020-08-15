@@ -34,6 +34,7 @@ class WallNormalEstimation{
 		Eigen::Vector3f _g_vector{0.0, 0.0, -1.0};	//tmp
 		/*parameters*/
 		bool _mode_open_viewer;
+		int _omp_num_threads;
 		int _skip;
 		double _search_radius_ratio;
 		double _min_search_radius;
@@ -69,6 +70,8 @@ WallNormalEstimation::WallNormalEstimation()
 	std::cout << "_mode_open_viewer = " << (bool)_mode_open_viewer << std::endl;
 	_nhPrivate.param("skip", _skip, 3);
 	std::cout << "_skip = " << _skip << std::endl;
+	_nhPrivate.param("omp_num_threads", _omp_num_threads, omp_get_max_threads());
+	std::cout << "_omp_num_threads = " << _omp_num_threads << std::endl;
 	_nhPrivate.param("search_radius_ratio", _search_radius_ratio, 0.09);
 	std::cout << "_search_radius_ratio = " << _search_radius_ratio << std::endl;
 	_nhPrivate.param("min_search_radius", _min_search_radius, 0.1);
@@ -92,6 +95,8 @@ WallNormalEstimation::WallNormalEstimation()
 	_pub_nc = _nh.advertise<sensor_msgs::PointCloud2>("/normals", 1);
 	_pub_selected_nc = _nh.advertise<sensor_msgs::PointCloud2>("/normals/selected", 1);
 	_pub_selected_d_gsphere = _nh.advertise<sensor_msgs::PointCloud2>("/dgsphere/selected", 1);
+	/*OMP*/
+	if(_omp_num_threads < 1 || _omp_num_threads > omp_get_max_threads())	_omp_num_threads = omp_get_max_threads();
 	/*viewer*/
 	_viewer.setBackgroundColor(1, 1, 1);
 	_viewer.addCoordinateSystem(1.0, "axis");
@@ -128,7 +133,7 @@ void WallNormalEstimation::clearPC(void)
 
 void WallNormalEstimation::computeNormal(void)
 {
-	std::cout << "omp_get_max_threads() = " << omp_get_max_threads() << std::endl;
+	std::cout << "_omp_num_threads = " << _omp_num_threads << " out of " << omp_get_max_threads() << std::endl;
 
 	double time_start = ros::Time::now().toSec();
 
@@ -139,7 +144,7 @@ void WallNormalEstimation::computeNormal(void)
 	std::vector<bool> extract_indices((_pc->points.size()-1)/_skip + 1, false);
 
 	#ifdef _OPENMP
-	#pragma omp parallel for
+	#pragma omp parallel for num_threads(_omp_num_threads)
 	#endif
 	for(size_t i=0; i<_pc->points.size(); i+=_skip){
 		size_t normal_index = i/_skip;
@@ -186,7 +191,7 @@ void WallNormalEstimation::computeNormal(void)
 		_selected_d_gsphere = _d_gsphere;
 	}
 
-	std::cout << "computation time [s] = " << ros::Time::now().toSec() - time_start << std::endl;
+	std::cout << "duration[s] = " << ros::Time::now().toSec() - time_start << " / frequency[hz] = " << 1.0/(ros::Time::now().toSec() - time_start) << std::endl;
 	std::cout << "_selected_nc->points.size() = " << _selected_nc->points.size() << "(" << _selected_nc->points.size()/(double)_pc->points.size()*100.0 << " %)" << std::endl;
 }
 

@@ -131,7 +131,7 @@ void DgsphereToGravity::addToClusters(void)
 		}
 		if(!found_cluster){
 			_clusters.push_back(v_p);
-			_num_cluster_members.push_back(0);
+			_num_cluster_members.push_back(1);
 		}
 	}
 }
@@ -203,6 +203,8 @@ void DgsphereToGravity::quatToGravityVector(geometry_msgs::QuaternionStamped qua
 
 void DgsphereToGravity::publication(std_msgs::Header header)
 {
+	/*delay*/
+	std::cout << "delay[s]: " << (ros::Time::now() - header.stamp).toSec() << std::endl;
 	/*_arrows*/
 	_pub_markerarray.publish(_arrows);
 	/*_g_vector*/

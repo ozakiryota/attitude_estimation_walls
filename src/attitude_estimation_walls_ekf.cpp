@@ -142,11 +142,11 @@ void AttitudeEstimationWallsEKF::callbackIMU(const sensor_msgs::ImuConstPtr& msg
 	_stamp_imu_last = msg->header.stamp;
 
 	/*test*/
-	/* geometry_msgs::Vector3Stamped tmp; */
-	/* tmp.vector.x = -msg->linear_acceleration.x; */
-	/* tmp.vector.y = -msg->linear_acceleration.y; */
-	/* tmp.vector.z = -msg->linear_acceleration.z; */
-	/* observationG(tmp, 1.0e-0); */
+	// geometry_msgs::Vector3Stamped tmp;
+	// tmp.vector.x = -msg->linear_acceleration.x;
+	// tmp.vector.y = -msg->linear_acceleration.y;
+	// tmp.vector.z = -msg->linear_acceleration.z;
+	// observationG(tmp, 1.0e+3);
 }
 
 void AttitudeEstimationWallsEKF::callbackBias(const sensor_msgs::ImuConstPtr& msg)

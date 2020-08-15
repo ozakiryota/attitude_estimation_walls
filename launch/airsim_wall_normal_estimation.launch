@@ -32,6 +32,7 @@
 		<remap from="/cloud" to="/cloud/lower_hz"/>
 		<remap from="/quat" to="/quat/from_odom"/>
 		<!-- <param name="mode_open_viewer" type="bool" value="false"/> -->
+		<param name="omp_num_threads" type="int" value="3"/>
 		<param name="skip" type="int" value="3"/>
 		<param name="search_radius_ratio" type="double" value="0.09"/>
 		<param name="min_search_radius" type="double" value="0.1"/>
