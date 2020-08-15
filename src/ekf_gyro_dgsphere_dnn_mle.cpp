@@ -6,7 +6,7 @@
 #include <Eigen/Core>
 #include <Eigen/LU>
 
-class AttitudeEstimationWallsEKF{
+class EKFGyroDgsphereDNN{
 	private:
 		/*node handle*/
 		ros::NodeHandle _nh;
@@ -40,17 +40,19 @@ class AttitudeEstimationWallsEKF{
 		double _sigma_imu;
 		double _sigma_lidar_g;
 		double _sigma_camera_g;
+		double _th_mul_sigma;
 
 	public:
-		AttitudeEstimationWallsEKF();
+		EKFGyroDgsphereDNN();
 		void initializeState(void);
 		void callbackIniPose(const geometry_msgs::QuaternionStampedConstPtr& msg);
 		void callbackIMU(const sensor_msgs::ImuConstPtr& msg);
 		void callbackBias(const sensor_msgs::ImuConstPtr& msg);
 		void callbackLidarG(const geometry_msgs::Vector3StampedConstPtr& msg);
-		void callbackCameraG(const geometry_msgs::Vector3StampedConstPtr& msg);
+		void callbackCameraG(const sensor_msgs::ImuConstPtr& msg);
 		void predictionIMU(sensor_msgs::Imu imu, double dt);
-		void observationG(geometry_msgs::Vector3Stamped g, double sigma);
+		void observationLidarG(geometry_msgs::Vector3Stamped g, double sigma);
+		void observationCameraG(sensor_msgs::Imu g, double sigma);
 		void publication(ros::Time stamp);
 		void estimateYaw(sensor_msgs::Imu imu, double dt);
 		void getRotMatrixRP(double r, double p, Eigen::MatrixXd& Rot);
@@ -58,10 +60,10 @@ class AttitudeEstimationWallsEKF{
 		void anglePiToPi(double& angle);
 };
 
-AttitudeEstimationWallsEKF::AttitudeEstimationWallsEKF()
+EKFGyroDgsphereDNN::EKFGyroDgsphereDNN()
 	: _nhPrivate("~")
 {
-	std::cout << "--- attitude_estimation_walls_ekf ---" << std::endl;
+	std::cout << "--- ekf_gyro_dgsphere_dnn_mle ---" << std::endl;
 	/*parameter*/
 	_nhPrivate.param("wait_inipose", _wait_inipose, true);
 	std::cout << "_wait_inipose = " << (bool)_wait_inipose << std::endl;
@@ -71,16 +73,18 @@ AttitudeEstimationWallsEKF::AttitudeEstimationWallsEKF()
 	std::cout << "_sigma_ini = " << _sigma_ini << std::endl;
 	_nhPrivate.param("sigma_imu", _sigma_imu, 1.0e-4);
 	std::cout << "_sigma_imu = " << _sigma_imu << std::endl;
-	_nhPrivate.param("sigma_lidar_g", _sigma_lidar_g, 1.0e-1);
+	_nhPrivate.param("sigma_lidar_g", _sigma_lidar_g, 1.0e+1);
 	std::cout << "_sigma_lidar_g = " << _sigma_lidar_g << std::endl;
-	_nhPrivate.param("sigma_camera_g", _sigma_camera_g, 1.0e-1);
+	_nhPrivate.param("sigma_camera_g", _sigma_camera_g, 1.0e+2);
 	std::cout << "_sigma_camera_g = " << _sigma_camera_g << std::endl;
+	_nhPrivate.param("th_mul_sigma", _th_mul_sigma, 5.0e-4);
+	std::cout << "_th_mul_sigma = " << _th_mul_sigma << std::endl;
 	/*subscriber*/
-	_sub_inipose = _nh.subscribe("/initial_orientation", 1, &AttitudeEstimationWallsEKF::callbackIniPose, this);
-	_sub_imu = _nh.subscribe("/imu/data", 1, &AttitudeEstimationWallsEKF::callbackIMU, this);
-	_sub_bias = _nh.subscribe("/imu/bias", 1, &AttitudeEstimationWallsEKF::callbackBias, this);
-	_sub_lidar_g = _nh.subscribe("/lidar/g_vector", 1, &AttitudeEstimationWallsEKF::callbackLidarG, this);
-	_sub_camera_g = _nh.subscribe("/dnn/g_vector", 1, &AttitudeEstimationWallsEKF::callbackCameraG, this);
+	_sub_inipose = _nh.subscribe("/initial_orientation", 1, &EKFGyroDgsphereDNN::callbackIniPose, this);
+	_sub_imu = _nh.subscribe("/imu/data", 1, &EKFGyroDgsphereDNN::callbackIMU, this);
+	_sub_bias = _nh.subscribe("/imu/bias", 1, &EKFGyroDgsphereDNN::callbackBias, this);
+	_sub_lidar_g = _nh.subscribe("/lidar/g_vector", 1, &EKFGyroDgsphereDNN::callbackLidarG, this);
+	_sub_camera_g = _nh.subscribe("/dnn/g_vector_with_cov", 1, &EKFGyroDgsphereDNN::callbackCameraG, this);
 	/*publisher*/
 	_pub_quat_rp = _nh.advertise<geometry_msgs::QuaternionStamped>("/ekf/quat_rp", 1);
 	_pub_quat_rpy = _nh.advertise<geometry_msgs::QuaternionStamped>("/ekf/quat_rpy", 1);
@@ -88,7 +92,7 @@ AttitudeEstimationWallsEKF::AttitudeEstimationWallsEKF()
 	initializeState();
 }
 
-void AttitudeEstimationWallsEKF::initializeState(void)
+void EKFGyroDgsphereDNN::initializeState(void)
 {
 	_x = Eigen::Vector2d::Zero();
 	_P = _sigma_ini*Eigen::Matrix2d::Identity();
@@ -99,7 +103,7 @@ void AttitudeEstimationWallsEKF::initializeState(void)
 	std::cout << "_P = " << std::endl << _P << std::endl;
 }
 
-void AttitudeEstimationWallsEKF::callbackIniPose(const geometry_msgs::QuaternionStampedConstPtr& msg)
+void EKFGyroDgsphereDNN::callbackIniPose(const geometry_msgs::QuaternionStampedConstPtr& msg)
 {
 	if(!_got_inipose){
 		tf::Quaternion q;
@@ -113,7 +117,7 @@ void AttitudeEstimationWallsEKF::callbackIniPose(const geometry_msgs::Quaternion
 	} 
 }
 
-void AttitudeEstimationWallsEKF::callbackIMU(const sensor_msgs::ImuConstPtr& msg)
+void EKFGyroDgsphereDNN::callbackIMU(const sensor_msgs::ImuConstPtr& msg)
 {
 	/*wait initial orientation*/
 	if(!_got_inipose)	return;
@@ -146,10 +150,10 @@ void AttitudeEstimationWallsEKF::callbackIMU(const sensor_msgs::ImuConstPtr& msg
 	// tmp.vector.x = -msg->linear_acceleration.x;
 	// tmp.vector.y = -msg->linear_acceleration.y;
 	// tmp.vector.z = -msg->linear_acceleration.z;
-	// observationG(tmp, 1.0e+3);
+	// observationLidarG(tmp, 1.0e+3);
 }
 
-void AttitudeEstimationWallsEKF::callbackBias(const sensor_msgs::ImuConstPtr& msg)
+void EKFGyroDgsphereDNN::callbackBias(const sensor_msgs::ImuConstPtr& msg)
 {
 	if(!_got_bias){
 		_bias = *msg;
@@ -157,27 +161,27 @@ void AttitudeEstimationWallsEKF::callbackBias(const sensor_msgs::ImuConstPtr& ms
 	}
 }
 
-void AttitudeEstimationWallsEKF::callbackLidarG(const geometry_msgs::Vector3StampedConstPtr& msg)
+void EKFGyroDgsphereDNN::callbackLidarG(const geometry_msgs::Vector3StampedConstPtr& msg)
 {
 	/*wait initial orientation*/
 	if(!_got_inipose)	return;
 	/*observation*/
-	observationG(*msg, _sigma_lidar_g);
+	observationLidarG(*msg, _sigma_lidar_g);
 	/*publication*/
 	publication(msg->header.stamp);
 }
 
-void AttitudeEstimationWallsEKF::callbackCameraG(const geometry_msgs::Vector3StampedConstPtr& msg)
+void EKFGyroDgsphereDNN::callbackCameraG(const sensor_msgs::ImuConstPtr& msg)
 {
 	/*wait initial orientation*/
 	if(!_got_inipose)	return;
 	/*observation*/
-	observationG(*msg, _sigma_camera_g);
+	observationCameraG(*msg, _sigma_camera_g);
 	/*publication*/
 	publication(msg->header.stamp);
 }
 
-void AttitudeEstimationWallsEKF::predictionIMU(sensor_msgs::Imu imu, double dt)
+void EKFGyroDgsphereDNN::predictionIMU(sensor_msgs::Imu imu, double dt)
 {
 	/*u*/
 	Eigen::Vector3d u;
@@ -212,7 +216,7 @@ void AttitudeEstimationWallsEKF::predictionIMU(sensor_msgs::Imu imu, double dt)
 	for(int i=0;i<_x.size();++i)	anglePiToPi(_x(i));
 }
 
-void AttitudeEstimationWallsEKF::observationG(geometry_msgs::Vector3Stamped g_msg, double sigma)
+void EKFGyroDgsphereDNN::observationLidarG(geometry_msgs::Vector3Stamped g_msg, double sigma)
 {
 	/*print*/
 	std::cout
@@ -254,7 +258,76 @@ void AttitudeEstimationWallsEKF::observationG(geometry_msgs::Vector3Stamped g_ms
 	for(int i=0;i<_x.size();++i)	anglePiToPi(_x(i));
 }
 
-void AttitudeEstimationWallsEKF::publication(ros::Time stamp)
+void EKFGyroDgsphereDNN::observationCameraG(sensor_msgs::Imu g_msg, double sigma)
+{
+	/*judge*/
+	double mul_sigma = sqrt(g_msg.linear_acceleration_covariance[0])
+		*sqrt(g_msg.linear_acceleration_covariance[4])
+		*sqrt(g_msg.linear_acceleration_covariance[8]);
+	if(mul_sigma > _th_mul_sigma){
+		std::cout << "REJECT: mul_sigma = " << mul_sigma << " > " << _th_mul_sigma << std::endl;
+		return;
+	}
+	std::cout << "mul_sigma = " << mul_sigma << std::endl;
+	/*print*/
+	std::cout
+		<< "r[deg]: " << _x(0)/M_PI*180.0
+		<< ", "
+		<< "p[deg]: " << _x(1)/M_PI*180.0
+	<< std::endl;
+	/*z*/
+	Eigen::Vector3d z(
+		g_msg.linear_acceleration.x,
+		g_msg.linear_acceleration.y,
+		g_msg.linear_acceleration.z
+	);
+	z.normalize();
+	std::cout << "z: " << z(0) << ", " << z(1) << ", " << z(2) << std::endl;
+	/*zp*/
+	const double g = -1.0;
+	Eigen::Vector3d zp(
+		-g*sin(_x(1)),
+		g*sin(_x(0))*cos(_x(1)),
+		g*cos(_x(0))*cos(_x(1))
+	);
+	std::cout << "zp: " << zp(0) << ", " << zp(1) << ", " << zp(2) << std::endl;
+	/*jH*/
+	Eigen::MatrixXd jH(z.size(), _x.size());
+	jH <<
+		0.0,						-g*cos(_x(1)),
+		g*cos(_x(0))*cos(_x(1)),	-g*sin(_x(0))*sin(_x(1)),
+		-g*sin(_x(0))*cos(_x(1)),	-g*cos(_x(0))*sin(_x(1));
+	/*R*/
+	// Eigen::MatrixXd R = sigma*Eigen::MatrixXd::Identity(z.size(), z.size());
+	Eigen::MatrixXd R(z.size(), z.size());
+	R <<
+		g_msg.linear_acceleration_covariance[0],
+			g_msg.linear_acceleration_covariance[1],
+			g_msg.linear_acceleration_covariance[2],
+		g_msg.linear_acceleration_covariance[3],
+			g_msg.linear_acceleration_covariance[4],
+			g_msg.linear_acceleration_covariance[5],
+		g_msg.linear_acceleration_covariance[6],
+			g_msg.linear_acceleration_covariance[7],
+			g_msg.linear_acceleration_covariance[8];
+	R(0, 0) = sigma*R(0, 0);
+	R(1, 1) = sigma*R(1, 1);
+	R(2, 2) = sigma*R(2, 2);
+	std::cout << "R = " << std::endl << R << std::endl;
+	/*I*/
+	Eigen::MatrixXd I = Eigen::MatrixXd::Identity(_x.size(), _x.size());
+	/*y, s, K*/
+	Eigen::Vector3d y = z - zp;
+	Eigen::MatrixXd S = jH*_P*jH.transpose() + R;
+	Eigen::MatrixXd K = _P*jH.transpose()*S.inverse();
+	/*update*/
+	_x = _x + K*y;
+	_P = (I - K*jH)*_P;
+	/*-pi to pi*/
+	for(int i=0;i<_x.size();++i)	anglePiToPi(_x(i));
+}
+
+void EKFGyroDgsphereDNN::publication(ros::Time stamp)
 {
 	/*RP*/
 	tf::Quaternion q_rp = tf::createQuaternionFromRPY(_x(0), _x(1), 0.0);
@@ -280,7 +353,7 @@ void AttitudeEstimationWallsEKF::publication(ros::Time stamp)
 	// std::cout << "r[deg]: " << _x(0) << " p[deg]: " << _x(1) << std::endl;
 }
 
-void AttitudeEstimationWallsEKF::estimateYaw(sensor_msgs::Imu imu, double dt)
+void EKFGyroDgsphereDNN::estimateYaw(sensor_msgs::Imu imu, double dt)
 {
 	/*u*/
 	Eigen::Vector3d u;
@@ -303,29 +376,29 @@ void AttitudeEstimationWallsEKF::estimateYaw(sensor_msgs::Imu imu, double dt)
 	anglePiToPi(_yaw);
 }
 
-void AttitudeEstimationWallsEKF::getRotMatrixRP(double r, double p, Eigen::MatrixXd& Rot)
+void EKFGyroDgsphereDNN::getRotMatrixRP(double r, double p, Eigen::MatrixXd& Rot)
 {
 	Rot <<
 		1,	sin(r)*tan(p),	cos(r)*tan(p),
 		0,	cos(r),			-sin(r);
 }
 
-void AttitudeEstimationWallsEKF::getRotMatrixY(double r, double p, Eigen::MatrixXd& Rot)
+void EKFGyroDgsphereDNN::getRotMatrixY(double r, double p, Eigen::MatrixXd& Rot)
 {
 	Rot <<
 		0,	sin(r)/cos(p),	cos(r)/cos(p);
 }
 
-void AttitudeEstimationWallsEKF::anglePiToPi(double& angle)
+void EKFGyroDgsphereDNN::anglePiToPi(double& angle)
 {
 	angle = atan2(sin(angle), cos(angle)); 
 }
 
 int main(int argc, char** argv)
 {
-    ros::init(argc, argv, "attitude_estimation_walls_ekf");
+    ros::init(argc, argv, "ekf_gyro_dgsphere_dnn_mle");
 	
-	AttitudeEstimationWallsEKF attitude_estimation_walls_ekf;
+	EKFGyroDgsphereDNN ekf_gyro_dgsphere_dnn_mle;
 
 	ros::spin();
 }

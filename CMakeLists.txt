@@ -200,9 +200,6 @@ include_directories(
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 #
-add_executable(attitude_estimation_walls_ekf src/attitude_estimation_walls_ekf.cpp)
-target_link_libraries(attitude_estimation_walls_ekf ${catkin_LIBRARIES})
-#
 add_executable(sqlidar_gravity_estimation src/sqlidar_gravity_estimation.cpp)
 target_link_libraries(sqlidar_gravity_estimation ${catkin_LIBRARIES})
 #
@@ -211,3 +208,12 @@ target_link_libraries(wall_normal_estimation ${catkin_LIBRARIES})
 #
 add_executable(dgsphere_to_gravity src/dgsphere_to_gravity.cpp)
 target_link_libraries(dgsphere_to_gravity ${catkin_LIBRARIES})
+#
+add_executable(ekf_gyro_dgsphere src/ekf_gyro_dgsphere.cpp)
+target_link_libraries(ekf_gyro_dgsphere ${catkin_LIBRARIES})
+#
+add_executable(ekf_gyro_dgsphere_dnn_regression src/ekf_gyro_dgsphere_dnn_regression.cpp)
+target_link_libraries(ekf_gyro_dgsphere_dnn_regression ${catkin_LIBRARIES})
+#
+add_executable(ekf_gyro_dgsphere_dnn_mle src/ekf_gyro_dgsphere_dnn_mle.cpp)
+target_link_libraries(ekf_gyro_dgsphere_dnn_mle ${catkin_LIBRARIES})

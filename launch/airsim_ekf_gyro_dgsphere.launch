@@ -39,7 +39,7 @@
 		<remap from="/quat" to="/ekf/quat_rpy"/>
 		<param name="min_num_cluster_members" type="int" value="20"/>
 	</node>
-	<node pkg="attitude_estimation_walls" name="attitude_estimation_walls_ekf" type="attitude_estimation_walls_ekf" output="screen">
+	<node pkg="attitude_estimation_walls" name="ekf_gyro_dgsphere" type="ekf_gyro_dgsphere" output="screen">
 		<remap from="/imu/data" to="/imu/data/neu"/>
 		<param name="wait_inipose" type="bool" value="false"/>
 		<param name="sigma_lidar_g" type="double" value="1.0e+1"/>
