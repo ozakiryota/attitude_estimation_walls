@@ -217,3 +217,9 @@ target_link_libraries(ekf_gyro_dgsphere_dnn_regression ${catkin_LIBRARIES})
 #
 add_executable(ekf_gyro_dgsphere_dnn_mle src/ekf_gyro_dgsphere_dnn_mle.cpp)
 target_link_libraries(ekf_gyro_dgsphere_dnn_mle ${catkin_LIBRARIES})
+#
+add_executable(record_sub_timing_gyro_mle_dgsphere src/record_sub_timing_gyro_mle_dgsphere.cpp)
+target_link_libraries(record_sub_timing_gyro_mle_dgsphere ${catkin_LIBRARIES})
+#
+add_executable(visualize_gravity_vector src/visualize_gravity_vector.cpp)
+target_link_libraries(visualize_gravity_vector ${catkin_LIBRARIES})

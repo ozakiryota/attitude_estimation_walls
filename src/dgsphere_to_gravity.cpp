@@ -90,10 +90,10 @@ void DgsphereToGravity::callbackPC(const sensor_msgs::PointCloud2ConstPtr &msg)
 	std::cout << "sum_num_cluster_members = " << sum_num_cluster_members << std::endl;
 	eraseSmallCluster();
 	_g_is_available = estimateG();
-	if(!_clusters.empty()){
-		inputMarkerArray(msg->header);
-		publication(msg->header);
-	}
+	// if(!_clusters.empty()){
+	inputMarkerArray(msg->header);
+	publication(msg->header);
+	// }
 }
 
 void DgsphereToGravity::callbackQuat(const geometry_msgs::QuaternionStampedConstPtr &msg)
@@ -225,8 +225,8 @@ void DgsphereToGravity::inputMarkerArray(std_msgs::Header header)
 	delete_markers.action = visualization_msgs::Marker::DELETEALL;
 	_arrows.markers.push_back(delete_markers);
 	/*clustered dgsphere*/
-	const double shaft_diameter = 0.1;
-	const double head_diameter = 0.2;
+	const double shaft_diameter_n = 0.1;
+	const double head_diameter_n = 0.2;
 	// const double head_length = 1;
 	geometry_msgs::Point start;
 	start.x = 0.0;
@@ -239,10 +239,11 @@ void DgsphereToGravity::inputMarkerArray(std_msgs::Header header)
 		tmp.id = _arrows.markers.size();
 		tmp.type = visualization_msgs::Marker::ARROW;
 		tmp.action = visualization_msgs::Marker::ADD;
-		tmp.scale.x = shaft_diameter;
-		tmp.scale.y = head_diameter;
+		tmp.scale.x = shaft_diameter_n;
+		tmp.scale.y = head_diameter_n;
 		// tmp.scale.z = head_length;
 		tmp.color.r = 1.0;
+		tmp.color.b = 1.0;
 		tmp.color.a = 1.0;
 		geometry_msgs::Point end;
 		end.x = _clusters[i](0);
@@ -253,6 +254,8 @@ void DgsphereToGravity::inputMarkerArray(std_msgs::Header header)
 		_arrows.markers.push_back(tmp);
 	}
 	/*gravity*/
+	const double shaft_diameter_g = 0.5;
+	const double head_diameter_g = 0.75;
 	if(_g_is_available){
 		const double gravity_lengh = 10.0;
 		visualization_msgs::Marker gravity;
@@ -260,8 +263,8 @@ void DgsphereToGravity::inputMarkerArray(std_msgs::Header header)
 		gravity.ns = "gravity";
 		gravity.type = visualization_msgs::Marker::ARROW;
 		gravity.action = visualization_msgs::Marker::ADD;
-		gravity.scale.x = shaft_diameter;
-		gravity.scale.y = head_diameter;
+		gravity.scale.x = shaft_diameter_g;
+		gravity.scale.y = head_diameter_g;
 		gravity.color.g = 1.0;
 		gravity.color.a = 1.0;
 		geometry_msgs::Point end;

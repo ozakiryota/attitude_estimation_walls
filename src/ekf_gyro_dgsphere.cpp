@@ -32,6 +32,8 @@ class EKFGyroDgsphere{
 		bool _got_inipose = false;
 		bool _got_first_imu = false;
 		bool _got_bias = false;
+		/*counter*/
+		std::vector<int> _obs_counter;	//{imu, lidar}
 		/*parameter*/
 		bool _wait_inipose;
 		std::string _frame_id;
@@ -80,6 +82,7 @@ EKFGyroDgsphere::EKFGyroDgsphere()
 	_pub_quat_rpy = _nh.advertise<geometry_msgs::QuaternionStamped>("/ekf/quat_rpy", 1);
 	/*initialize*/
 	initializeState();
+	_obs_counter = std::vector<int>(2, 0);	//{imu, lidar}
 }
 
 void EKFGyroDgsphere::initializeState(void)
@@ -134,6 +137,11 @@ void EKFGyroDgsphere::callbackIMU(const sensor_msgs::ImuConstPtr& msg)
 	publication(msg->header.stamp);
 	/*reset*/
 	_stamp_imu_last = msg->header.stamp;
+	/*counter*/
+	++_obs_counter[0];
+	std::cout << "_obs_counter:"
+		<< " IMU: " << _obs_counter[0]
+		<< " LiDAR: " << _obs_counter[1] << std::endl;
 
 	/*test*/
 	// geometry_msgs::Vector3Stamped tmp;
@@ -159,6 +167,8 @@ void EKFGyroDgsphere::callbackLidarG(const geometry_msgs::Vector3StampedConstPtr
 	observationG(*msg, _sigma_lidar_g);
 	/*publication*/
 	publication(msg->header.stamp);
+	/*counter*/
+	++_obs_counter[1];
 }
 
 void EKFGyroDgsphere::predictionIMU(sensor_msgs::Imu imu, double dt)

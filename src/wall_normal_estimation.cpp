@@ -58,7 +58,7 @@ class WallNormalEstimation{
 		double computeFittingError(const Eigen::Vector4f& N, std::vector<int> indices);
 		void quatToGravityVector(geometry_msgs::QuaternionStamped quat);
 		void visualization(void);
-		void publication(void);
+		void publication(std_msgs::Header header);
 };
 
 WallNormalEstimation::WallNormalEstimation()
@@ -115,7 +115,7 @@ void WallNormalEstimation::callbackPC(const sensor_msgs::PointCloud2ConstPtr &ms
 	computeNormal();
 
 	if(_mode_open_viewer)	visualization();
-	publication();
+	publication(msg->header);
 }
 
 void WallNormalEstimation::callbackQuat(const geometry_msgs::QuaternionStampedConstPtr &msg)
@@ -289,27 +289,30 @@ void WallNormalEstimation::visualization(void)
 	_viewer.spinOnce();
 }
 
-void WallNormalEstimation::publication(void)
+void WallNormalEstimation::publication(std_msgs::Header header)
 {
 	/*normals*/
-	_nc->header.stamp = _pc->header.stamp;
-	_nc->header.frame_id = _pc->header.frame_id;
+	//_nc->header.stamp = _pc->header.stamp;
+	//_nc->header.frame_id = _pc->header.frame_id;
 	sensor_msgs::PointCloud2 nc_msg;
 	pcl::toROSMsg(*_nc, nc_msg);
+	nc_msg.header = header;
 	_pub_nc.publish(nc_msg);	
 	/*selected normals*/
 	if(_mode_selection){
-		_selected_nc->header.stamp = _pc->header.stamp;
-		_selected_nc->header.frame_id = _pc->header.frame_id;
+		//_selected_nc->header.stamp = _pc->header.stamp;
+		//_selected_nc->header.frame_id = _pc->header.frame_id;
 		sensor_msgs::PointCloud2 selected_nc_msg;
 		pcl::toROSMsg(*_selected_nc, selected_nc_msg);
+		selected_nc_msg.header = header;
 		_pub_selected_nc.publish(selected_nc_msg);
 	}
 	/*selected d-gaussian sphere*/
-	_selected_d_gsphere->header.stamp = _pc->header.stamp;
-	_selected_d_gsphere->header.frame_id = _pc->header.frame_id;
+	//_selected_d_gsphere->header.stamp = _pc->header.stamp;
+	//_selected_d_gsphere->header.frame_id = _pc->header.frame_id;
 	sensor_msgs::PointCloud2 selected_gsphere_msg;
 	pcl::toROSMsg(*_selected_d_gsphere, selected_gsphere_msg);
+	selected_gsphere_msg.header = header;
 	_pub_selected_d_gsphere.publish(selected_gsphere_msg);
 }
 

@@ -33,6 +33,8 @@ class EKFGyroDgsphereDNN{
 		bool _got_inipose = false;
 		bool _got_first_imu = false;
 		bool _got_bias = false;
+		/*counter*/
+		std::vector<int> _obs_counter;	//{imu, lidar, camera}
 		/*parameter*/
 		bool _wait_inipose;
 		std::string _frame_id;
@@ -52,6 +54,7 @@ class EKFGyroDgsphereDNN{
 		void callbackCameraG(const sensor_msgs::ImuConstPtr& msg);
 		void predictionIMU(sensor_msgs::Imu imu, double dt);
 		void observationLidarG(geometry_msgs::Vector3Stamped g, double sigma);
+		bool varIsSmallEnough(sensor_msgs::Imu g_msg);
 		void observationCameraG(sensor_msgs::Imu g, double sigma);
 		void publication(ros::Time stamp);
 		void estimateYaw(sensor_msgs::Imu imu, double dt);
@@ -90,6 +93,7 @@ EKFGyroDgsphereDNN::EKFGyroDgsphereDNN()
 	_pub_quat_rpy = _nh.advertise<geometry_msgs::QuaternionStamped>("/ekf/quat_rpy", 1);
 	/*initialize*/
 	initializeState();
+	_obs_counter = std::vector<int>(3, 0);	//{imu, lidar, camera}
 }
 
 void EKFGyroDgsphereDNN::initializeState(void)
@@ -144,6 +148,12 @@ void EKFGyroDgsphereDNN::callbackIMU(const sensor_msgs::ImuConstPtr& msg)
 	publication(msg->header.stamp);
 	/*reset*/
 	_stamp_imu_last = msg->header.stamp;
+	/*counter*/
+	++_obs_counter[0];
+	std::cout << "_obs_counter:"
+		<< " IMU: " << _obs_counter[0]
+		<< " LiDAR: " << _obs_counter[1]
+		<< " Camera: " << _obs_counter[2] << std::endl;
 
 	/*test*/
 	// geometry_msgs::Vector3Stamped tmp;
@@ -169,16 +179,22 @@ void EKFGyroDgsphereDNN::callbackLidarG(const geometry_msgs::Vector3StampedConst
 	observationLidarG(*msg, _sigma_lidar_g);
 	/*publication*/
 	publication(msg->header.stamp);
+	/*counter*/
+	++_obs_counter[1];
 }
 
 void EKFGyroDgsphereDNN::callbackCameraG(const sensor_msgs::ImuConstPtr& msg)
 {
 	/*wait initial orientation*/
 	if(!_got_inipose)	return;
-	/*observation*/
-	observationCameraG(*msg, _sigma_camera_g);
-	/*publication*/
-	publication(msg->header.stamp);
+	if(varIsSmallEnough(*msg)){
+		/*observation*/
+		observationCameraG(*msg, _sigma_camera_g);
+		/*publication*/
+		publication(msg->header.stamp);
+		/*counter*/
+		++_obs_counter[2];
+	}
 }
 
 void EKFGyroDgsphereDNN::predictionIMU(sensor_msgs::Imu imu, double dt)
@@ -258,7 +274,7 @@ void EKFGyroDgsphereDNN::observationLidarG(geometry_msgs::Vector3Stamped g_msg, 
 	for(int i=0;i<_x.size();++i)	anglePiToPi(_x(i));
 }
 
-void EKFGyroDgsphereDNN::observationCameraG(sensor_msgs::Imu g_msg, double sigma)
+bool EKFGyroDgsphereDNN::varIsSmallEnough(sensor_msgs::Imu g_msg)
 {
 	/*judge*/
 	double mul_sigma = sqrt(g_msg.linear_acceleration_covariance[0])
@@ -266,9 +282,14 @@ void EKFGyroDgsphereDNN::observationCameraG(sensor_msgs::Imu g_msg, double sigma
 		*sqrt(g_msg.linear_acceleration_covariance[8]);
 	if(mul_sigma > _th_mul_sigma){
 		std::cout << "REJECT: mul_sigma = " << mul_sigma << " > " << _th_mul_sigma << std::endl;
-		return;
+		return false;
 	}
 	std::cout << "mul_sigma = " << mul_sigma << std::endl;
+	return true;
+}
+
+void EKFGyroDgsphereDNN::observationCameraG(sensor_msgs::Imu g_msg, double sigma)
+{
 	/*print*/
 	std::cout
 		<< "r[deg]: " << _x(0)/M_PI*180.0

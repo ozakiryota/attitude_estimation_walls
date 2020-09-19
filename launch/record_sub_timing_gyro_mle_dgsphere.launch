@@ -3,8 +3,12 @@
 	<param name="use_sim_time" value="true"/>
 
 	<!-- rosbag -->
-	<!-- <node pkg="rosbag" type="play" name="player" args="&#45;&#45;clock /home/amsl/ozaki/docker_ws/airsim_ros_wrapper/bagfiles/drone_1cam_lidar_202008130010.bag"/> -->
-	<node pkg="rosbag" type="play" name="player" args="--clock /home/amsl/ozaki/docker_ws/airsim_ros_wrapper/bagfiles/drone_1cam_lidar_202008131352.bag"/>
+	<!-- 1 rounds -->
+	<!-- <node pkg="rosbag" type="play" name="player" args="&#45;&#45;clock /home/amsl/ozaki/bagfiles/airsim/Neighborhood/drone_1cam_lidar_noisedimu_202008271755.bag"/> -->
+	<!-- 3 rounds -->
+	<!-- <node pkg="rosbag" type="play" name="player" args="&#45;&#45;clock /home/amsl/ozaki/bagfiles/airsim/Neighborhood/drone_1cam_lidar_noisedimu_202008290246.bag"/> -->
+	<!-- 5 rounds -->
+	<node pkg="rosbag" type="play" name="player" args="--clock /home/amsl/ozaki/bagfiles/airsim/Neighborhood/drone_1cam_lidar_noisedimu_202009011526.bag"/>
 
 	<!-- rviz -->
 	<node pkg="rviz" type="rviz" name="rviz" args="-d $(find attitude_estimation_walls)/rviz_config/airsim_dgsphere_to_gravity.rviz"/>
@@ -19,7 +23,8 @@
 	</node>
 	<node pkg="msg_conversion" type="ned_to_neu" name="ned_to_neu">
 		<remap from="/odom" to="/airsim_node/drone/odom_local_ned"/>
-		<remap from="/imu/data" to="/airsim_node/drone/imu/Imu"/>
+		<!-- <remap from="/imu/data" to="/airsim_node/drone/imu/Imu"/> -->
+		<remap from="/imu/data" to="/airsim_node/drone/imu/Imu/with_noise"/>
 	</node>
 
 	<!-- image -->
@@ -28,8 +33,8 @@
 		<remap from="out" to="/decompressed_image"/>
 	</node>
 
-	<!-- main -->
-	<node pkg="attitude_estimation_walls" name="wall_normal_estimation" type="wall_normal_estimation" output="screen">
+	<!-- MAIN -->
+	<node pkg="attitude_estimation_walls" name="wall_normal_estimation" type="wall_normal_estimation">
 		<remap from="/cloud" to="/cloud/lower_hz"/>
 		<remap from="/quat" to="/ekf/quat_rpy"/>
 		<!-- <param name="mode_open_viewer" type="bool" value="false"/> -->
@@ -40,20 +45,21 @@
 		<param name="th_num_neighborpoints" type="int" value="10"/>
 		<param name="th_fitting_error" type="double" value="0.05"/>
 	</node>
-	<node pkg="attitude_estimation_walls" name="dgsphere_to_gravity" type="dgsphere_to_gravity" output="screen">
+	<node pkg="attitude_estimation_walls" name="dgsphere_to_gravity" type="dgsphere_to_gravity">
 		<remap from="/cloud" to="/dgsphere/selected"/>
 		<remap from="/quat" to="/ekf/quat_rpy"/>
 		<param name="min_num_cluster_members" type="int" value="20"/>
 	</node>
-	<node pkg="attitude_estimation_walls" name="ekf_gyro_dgsphere_dnn_mle" type="ekf_gyro_dgsphere_dnn_mle" output="screen">
+	<node pkg="attitude_estimation_walls" name="ekf_gyro_dgsphere_dnn_mle" type="ekf_gyro_dgsphere_dnn_mle">
 		<remap from="/imu/data" to="/imu/data/neu"/>
 		<param name="wait_inipose" type="bool" value="false"/>
-		<param name="sigma_lidar_g" type="double" value="1.0e+1"/>
-		<param name="sigma_camera_g" type="double" value="1.0e+5"/>
-		<param name="th_mul_sigma" type="double" value="2.0e-4"/>
+		<!-- <param name="sigma_lidar_g" type="double" value="1.0e+1"/> -->
+		<param name="sigma_lidar_g" type="double" value="5.0e+0"/>
+		<param name="sigma_camera_g" type="double" value="1.0e+4"/>
+		<param name="th_mul_sigma" type="double" value="8.0e-5"/>
 	</node>
 
-	<!-- validation -->
+	<!-- msg conversion -->
 	<node pkg="msg_conversion" name="odometry_to_rpy" type="odometry_to_rpy">
 		<remap from="/odom" to="/odom/neu"/>
 		<remap from="/rpy" to="/gt/rpy"/>
@@ -62,9 +68,22 @@
 		<remap from="/quat" to="/ekf/quat_rpy"/>
 		<remap from="/rpy" to="/ekf/rpy"/>
 	</node>
+
+	<!-- validation -->
 	<param name="erase_old_data" type="bool" value="False"/>
-	<node pkg="msg_printer" name="compare_rp" type="compare_rp.py">
+	<param name="/num_sub" type="int" value="1"/>
+	<param name="/method0" type="str" value="Gyro+DGSphere+MLE"/>
+	<node pkg="msg_printer" type="compare_rp_multi_methods.py" name="compare_rp_multi_methods">
 		<remap from="/truth/rpy" to="/gt/rpy"/>
-		<remap from="/estimation/rpy" to="/ekf/rpy"/>
+		<remap from="/estimation0/rpy" to="/ekf/rpy"/>
+	</node>
+
+	<!-- MAIN -->
+	<node pkg="attitude_estimation_walls" type="record_sub_timing" name="record_sub_timing_gyro_mle_dgsphere" output="screen">
+		<param name="save_csv_path" type="string" value="$(find attitude_estimation_walls)/save/record_sub_timing.csv"/>
+		<param name="use_ros_time_now" type="bool" value="true"/>
+		<remap from="/imu_0" to="/imu/data/neu"/>
+		<remap from="/imu_1" to="/dnn/g_vector_with_cov"/>
+		<remap from="/vector_0" to="/lidar/g_vector"/>
 	</node>
 </launch>
