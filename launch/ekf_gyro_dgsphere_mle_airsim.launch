@@ -5,22 +5,23 @@
 	<!-- rosbag -->
 	<!-- 1 rounds -->
 	<!-- <node pkg="rosbag" type="play" name="player" args="&#45;&#45;clock /home/amsl/ozaki/bagfiles/airsim/Neighborhood/drone_1cam_lidar_noisedimu_202008271755.bag"/> -->
+	<node pkg="rosbag" type="play" name="player" args="--clock /home/amsl/ozaki/bagfiles/airsim/Neighborhood/drone_1cam_lidar_noisedimu_202011221752.bag"/>
 	<!-- 3 rounds -->
 	<!-- <node pkg="rosbag" type="play" name="player" args="&#45;&#45;clock /home/amsl/ozaki/bagfiles/airsim/Neighborhood/drone_1cam_lidar_noisedimu_202008290246.bag"/> -->
 	<!-- 5 rounds -->
-	<node pkg="rosbag" type="play" name="player" args="--clock /home/amsl/ozaki/bagfiles/airsim/Neighborhood/drone_1cam_lidar_noisedimu_202009011526.bag"/>
+	<!-- <node pkg="rosbag" type="play" name="player" args="&#45;&#45;clock /home/amsl/ozaki/bagfiles/airsim/Neighborhood/drone_1cam_lidar_noisedimu_202009011526.bag"/> -->
 
 	<!-- rviz -->
-	<node pkg="rviz" type="rviz" name="rviz" args="-d $(find attitude_estimation_walls)/rviz_config/airsim_dgsphere_to_gravity.rviz"/>
+	<node pkg="rviz" type="rviz" name="rviz" args="-d $(find attitude_estimation_walls)/rviz_config/dgsphere_camera_airsim.rviz"/>
 
 	<!-- NED to NEU -->
 	<node pkg="msg_conversion" name="pc_ned_to_neu" type="pc_ned_to_neu">
 		<remap from="/cloud" to="/airsim_node/drone/lidar/LidarCustom"/>
 	</node>
-	<node pkg="pc_store" name="lower_pc_hz" type="lower_pc_hz">
-		<remap from="/cloud" to="/cloud/neu"/>
-		<param name="target_hz" type="double" value="20"/>
-	</node>
+	<!-- <node pkg="pc_store" name="lower_pc_hz" type="lower_pc_hz"> -->
+	<!-- 	<remap from="/cloud" to="/cloud/neu"/> -->
+	<!-- 	<param name="target_hz" type="double" value="20"/> -->
+	<!-- </node> -->
 	<node pkg="msg_conversion" type="ned_to_neu" name="ned_to_neu">
 		<remap from="/odom" to="/airsim_node/drone/odom_local_ned"/>
 		<!-- <remap from="/imu/data" to="/airsim_node/drone/imu/Imu"/> -->
@@ -35,9 +36,10 @@
 
 	<!-- MAIN -->
 	<node pkg="attitude_estimation_walls" name="wall_normal_estimation" type="wall_normal_estimation" output="screen">
-		<remap from="/cloud" to="/cloud/lower_hz"/>
+		<remap from="/cloud" to="/cloud/neu"/>
+		<!-- <remap from="/cloud" to="/cloud/lower_hz"/> -->
 		<remap from="/quat" to="/ekf/quat_rpy"/>
-		<!-- <param name="mode_open_viewer" type="bool" value="false"/> -->
+		<param name="mode_open_viewer" type="bool" value="false"/>
 		<param name="omp_num_threads" type="int" value="3"/>
 		<param name="skip" type="int" value="3"/>
 		<param name="search_radius_ratio" type="double" value="0.09"/>
@@ -59,35 +61,6 @@
 		<param name="th_mul_sigma" type="double" value="8.0e-5"/>
 	</node>
 
-	<!-- comparative approaches -->
-	<!-- <node pkg="gyrodometry" name="gyrodometry3d" type="gyrodometry3d"> -->
-	<!-- 	<remap from="/odom" to="/odom/neu"/> -->
-	<!-- 	<remap from="/imu/data" to="/imu/data/neu"/> -->
-	<!-- 	<param name="wait_inipose" type="bool" value="false"/> -->
-	<!-- </node> -->
-
-	<!-- msg conversion -->
-	<node pkg="msg_conversion" name="odometry_to_rpy" type="odometry_to_rpy">
-		<remap from="/odom" to="/odom/neu"/>
-		<remap from="/rpy" to="/gt/rpy"/>
-	</node>
-	<node pkg="msg_conversion" name="quatstamped_to_rpy" type="quatstamped_to_rpy">
-		<remap from="/quat" to="/ekf/quat_rpy"/>
-		<remap from="/rpy" to="/ekf/rpy"/>
-	</node>
-	<!-- <node pkg="msg_conversion" type="odometry_to_rpy" name="gyrodometry_to_rpy"> -->
-	<!-- 	<remap from="/odom" to="/gyrodometry"/> -->
-	<!-- 	<remap from="/rpy" to="/gyrodometry/rpy"/> -->
-	<!-- </node> -->
-
-	<!-- validation -->
-	<param name="erase_old_data" type="bool" value="False"/>
-	<param name="/num_sub" type="int" value="1"/>
-	<param name="/method0" type="str" value="Gyro+DGSphere+MLE"/>
-	<!-- <param name="/method1" type="str" value="Gyro"/> -->
-	<node pkg="msg_printer" type="compare_rp_multi_methods.py" name="compare_rp_multi_methods" output="screen">
-		<remap from="/truth/rpy" to="/gt/rpy"/>
-		<remap from="/estimation0/rpy" to="/ekf/rpy"/>
-		<!-- <remap from="/estimation1/rpy" to="/gyrodometry/rpy"/> -->
-	</node>
+	<!-- evaluation -->
+	<include file="$(find attitude_estimation_walls)/launch/comparison_with_gt_airsim.launch"/>
 </launch>
