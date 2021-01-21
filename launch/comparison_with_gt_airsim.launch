@@ -3,11 +3,11 @@
 	<param name="use_sim_time" value="true"/>
 
 	<!-- compared methods -->
-	<node pkg="gyrodometry" name="gyrodometry3d" type="gyrodometry3d">
-		<remap from="/odom" to="/odom/neu"/>
-		<remap from="/imu/data" to="/imu/data/neu"/>
-		<param name="wait_inipose" type="bool" value="false"/>
-	</node>
+	<!-- <node pkg="gyrodometry" name="gyrodometry3d" type="gyrodometry3d"> -->
+	<!-- 	<remap from="/odom" to="/odom/neu"/> -->
+	<!-- 	<remap from="/imu/data" to="/imu/data/neu"/> -->
+	<!-- 	<param name="wait_inipose" type="bool" value="false"/> -->
+	<!-- </node> -->
 
 	<!-- msg conversion -->
 	<!-- <node pkg="msg_conversion" name="combine_orientation_linear" type="combine_orientation_linear"> -->
@@ -22,17 +22,17 @@
 		<remap from="/quat" to="/ekf/quat_rpy"/>
 		<remap from="/rpy" to="/ekf/rpy"/>
 	</node>
-	<node pkg="msg_conversion" type="odometry_to_rpy" name="gyrodometry_to_rpy">
-		<remap from="/odom" to="/gyrodometry"/>
-		<remap from="/rpy" to="/gyrodometry/rpy"/>
-	</node>
+	<!-- <node pkg="msg_conversion" type="odometry_to_rpy" name="gyrodometry_to_rpy"> -->
+	<!-- 	<remap from="/odom" to="/gyrodometry"/> -->
+	<!-- 	<remap from="/rpy" to="/gyrodometry/rpy"/> -->
+	<!-- </node> -->
 
 	<!-- validation -->
 	<param name="erase_old_data" type="bool" value="True"/>
 	<param name="save_csv" type="bool" value="True"/>
 	<param name="interval" type="double" value="0.01"/>
-	<param name="/num_sub" type="int" value="2"/>
-	<param name="/method0" type="str" value="Gyro+DGSphere"/>
+	<param name="/num_sub" type="int" value="1"/>
+	<param name="/method0" type="str" value="Gyro+DGSphere+MLE"/>
 	<param name="/method1" type="str" value="Gyro"/>
 	<node pkg="msg_printer" type="compare_rp_with_gt.py" name="compare_rp_with_gt" output="screen">
 		<remap from="/truth/rpy" to="/gt/rpy"/>

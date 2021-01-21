@@ -45,12 +45,12 @@
 		<remap from="/cloud" to="/dgsphere/selected"/>
 		<remap from="/quat" to="/ekf/quat_rpy"/>
 		<param name="min_num_cluster_members" type="int" value="20"/>
+		<param name="th_anglediff_gnew_glast_deg" type="double" value="20.0"/>
 	</node>
 	<node pkg="attitude_estimation_walls" name="ekf_gyro_dgsphere" type="ekf_gyro_dgsphere" output="screen">
 		<remap from="/imu/data" to="/imu/data/neu"/>
 		<param name="wait_inipose" type="bool" value="false"/>
-		<!-- <param name="sigma_lidar_g" type="double" value="1.0e+1"/> -->
-		<param name="sigma_lidar_g" type="double" value="5.0e+0"/>
+		<param name="sigma_lidar_g" type="double" value="1.0e+1"/>
 	</node>
 
 	<!-- evaluation -->
