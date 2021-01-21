@@ -35,7 +35,7 @@
 	<param name="save_csv" type="bool" value="True"/>
 	<param name="interval" type="double" value="0.01"/>
 	<param name="/num_sub" type="int" value="1"/>
-	<param name="/method0" type="str" value="Gyro+DGSphere"/>
+	<param name="/method0" type="str" value="Gyro+DGSphere+MLE"/>
 	<param name="/method1" type="str" value="Gyro"/>
 	<node pkg="msg_printer" type="compare_rp_with_gt.py" name="compare_rp_with_gt" output="screen">
 		<remap from="/truth/rpy" to="/gt/rpy"/>

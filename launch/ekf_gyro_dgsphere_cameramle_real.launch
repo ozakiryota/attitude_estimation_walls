@@ -1,0 +1,48 @@
+<launch>
+	<!-- global rosparam -->
+	<param name="use_sim_time" value="true"/>
+
+	<!-- rosbag -->
+	<!-- <node pkg="rosbag" type="play" name="player" args="&#45;&#45;clock /home/amsl/ozaki/bagfiles/stick_vlp32imu4cam/dynamic/dkan_outdoor/20201027_143715.bag"/> -->
+	<node pkg="rosbag" type="play" name="player" args="--clock /home/amsl/ozaki/bagfiles/stick_vlp32imu4cam/with_vicon/20201213_183636.bag"/>
+
+	<!-- rviz -->
+	<node pkg="rviz" type="rviz" name="rviz" args="-d $(find attitude_estimation_walls)/rviz_config/dgsphere_camera.rviz"/>
+
+	<!-- velodyne -->
+	<include file="$(find velodyne_pointcloud)/launch/VLP-32C_points.launch"/>
+	<!-- image -->
+	<node pkg="image_transport" type="republish" name="republish_f" args="compressed raw">
+		<remap from="in" to="/realsense_f/color/image_raw"/>
+		<remap from="out" to="/decompressed_image"/>
+	</node>
+
+	<!-- MAIN -->
+	<node pkg="attitude_estimation_walls" name="wall_normal_estimation" type="wall_normal_estimation" output="screen">
+		<remap from="/cloud" to="/velodyne_points"/>
+		<remap from="/quat" to="/ekf/quat_rpy"/>
+		<param name="mode_open_viewer" type="bool" value="false"/>
+		<param name="omp_num_threads" type="int" value="3"/>
+		<param name="skip" type="int" value="3"/>
+		<param name="search_radius_ratio" type="double" value="0.09"/>
+		<param name="min_search_radius" type="double" value="0.1"/>
+		<param name="th_num_neighborpoints" type="int" value="20"/>
+		<param name="th_fitting_error" type="double" value="0.05"/>
+	</node>
+	<node pkg="attitude_estimation_walls" name="dgsphere_to_gravity" type="dgsphere_to_gravity" output="screen">
+		<remap from="/cloud" to="/dgsphere/selected"/>
+		<remap from="/quat" to="/ekf/quat_rpy"/>
+		<param name="th_clustering_angle_deg" type="int" value="10"/>
+		<param name="min_num_cluster_members" type="int" value="100"/>
+	</node>
+	<node pkg="attitude_estimation_walls" name="ekf_gyro_dgsphere_dnn_mle" type="ekf_gyro_dgsphere_dnn_mle" output="screen">
+		<param name="wait_inipose" type="bool" value="false"/>
+		<!-- <param name="sigma_lidar_g" type="double" value="1.0e+1"/> -->
+		<param name="sigma_lidar_g" type="double" value="1.0e+1"/>
+		<param name="sigma_camera_g" type="double" value="5.0e+3"/>
+		<param name="th_mul_sigma" type="double" value="1.2e-4"/>
+	</node>
+
+	<!-- evaluation -->
+	<include file="$(find attitude_estimation_walls)/launch/comparison_with_gt_real.launch"/>
+</launch>
