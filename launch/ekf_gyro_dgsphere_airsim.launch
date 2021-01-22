@@ -50,7 +50,7 @@
 	<node pkg="attitude_estimation_walls" name="ekf_gyro_dgsphere" type="ekf_gyro_dgsphere" output="screen">
 		<remap from="/imu/data" to="/imu/data/neu"/>
 		<param name="wait_inipose" type="bool" value="false"/>
-		<param name="sigma_lidar_g" type="double" value="1.0e+1"/>
+		<param name="sigma_lidar_g" type="double" value="5.0e+0"/>
 	</node>
 
 	<!-- evaluation -->

@@ -3,25 +3,24 @@
 	<param name="use_sim_time" value="true"/>
 
 	<!-- rosbag -->
-	<node pkg="rosbag" type="play" name="player" args="--clock /home/amsl/ozaki/docker_ws/airsim_ros_wrapper/bagfiles/drone_1cam_lidar_202008130010.bag"/>
-	<!-- <node pkg="rosbag" type="play" name="player" args="&#45;&#45;clock /home/amsl/ozaki/docker_ws/airsim_ros_wrapper/bagfiles/drone_1cam_lidar_202008131352.bag"/> -->
+	<node pkg="rosbag" type="play" name="player" args="--clock /home/amsl/ozaki/bagfiles/airsim/Neighborhood/drone_1cam_lidar_noisedimu_202011221752.bag"/>
 
 	<!-- rviz -->
-	<node pkg="rviz" type="rviz" name="rviz" args="-d $(find attitude_estimation_walls)/rviz_config/airsim_wall_normal_estimation.rviz"/>
+	<node pkg="rviz" type="rviz" name="rviz" args="-d $(find attitude_estimation_walls)/rviz_config/wall_normal_estimation_airsim.rviz"/>
 
 	<!-- NED to NEU -->
 	<node pkg="msg_conversion" name="pc_ned_to_neu" type="pc_ned_to_neu">
 		<remap from="/cloud" to="/airsim_node/drone/lidar/LidarCustom"/>
 	</node>
-	<node pkg="pc_store" name="lower_pc_hz" type="lower_pc_hz">
-		<remap from="/cloud" to="/cloud/neu"/>
-		<param name="target_hz" type="double" value="20"/>
-	</node>
+	<!-- <node pkg="pc_store" name="lower_pc_hz" type="lower_pc_hz"> -->
+	<!-- 	<remap from="/cloud" to="/cloud/neu"/> -->
+	<!-- 	<param name="target_hz" type="double" value="20"/> -->
+	<!-- </node> -->
 
 	<!-- Ground truth pose -->
 	<node pkg="msg_conversion" type="ned_to_neu" name="ned_to_neu">
 		<remap from="/odom" to="/airsim_node/drone/odom_local_ned"/>
-		<remap from="/imu/data" to="/airsim_node/drone/imu/Imu"/>
+		<remap from="/imu/data" to="/airsim_node/drone/imu/Imu/with_noise"/>
 	</node>
 	<node pkg="msg_conversion" type="odometry_to_quaternionstamped" name="odometry_to_quaternionstamped">
 		<remap from="/odom" to="/odom/neu"/>
@@ -29,7 +28,7 @@
 
 	<!-- main -->
 	<node pkg="attitude_estimation_walls" name="wall_normal_estimation" type="wall_normal_estimation" output="screen">
-		<remap from="/cloud" to="/cloud/lower_hz"/>
+		<remap from="/cloud" to="/cloud/neu"/>
 		<remap from="/quat" to="/quat/from_odom"/>
 		<!-- <param name="mode_open_viewer" type="bool" value="false"/> -->
 		<param name="omp_num_threads" type="int" value="3"/>

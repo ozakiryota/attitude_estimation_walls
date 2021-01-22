@@ -40,7 +40,7 @@
 		<!-- <remap from="/cloud" to="/cloud/lower_hz"/> -->
 		<remap from="/quat" to="/ekf/quat_rpy"/>
 		<param name="mode_open_viewer" type="bool" value="false"/>
-		<param name="omp_num_threads" type="int" value="3"/>
+		<param name="omp_num_threads" type="int" value="4"/>
 		<param name="skip" type="int" value="3"/>
 		<param name="search_radius_ratio" type="double" value="0.09"/>
 		<param name="min_search_radius" type="double" value="0.1"/>
@@ -51,14 +51,14 @@
 		<remap from="/cloud" to="/dgsphere/selected"/>
 		<remap from="/quat" to="/ekf/quat_rpy"/>
 		<param name="min_num_cluster_members" type="int" value="20"/>
+		<param name="th_anglediff_gnew_glast_deg" type="double" value="20.0"/>
 	</node>
 	<node pkg="attitude_estimation_walls" name="ekf_gyro_dgsphere_dnn_mle" type="ekf_gyro_dgsphere_dnn_mle" output="screen">
 		<remap from="/imu/data" to="/imu/data/neu"/>
 		<param name="wait_inipose" type="bool" value="false"/>
-		<!-- <param name="sigma_lidar_g" type="double" value="1.0e+1"/> -->
 		<param name="sigma_lidar_g" type="double" value="5.0e+0"/>
-		<param name="sigma_camera_g" type="double" value="1.0e+4"/>
-		<param name="th_mul_sigma" type="double" value="8.0e-5"/>
+		<param name="sigma_camera_g" type="double" value="1.0e+3"/>
+		<param name="th_mul_sigma" type="double" value="1.2e-4"/>
 	</node>
 
 	<!-- evaluation -->
