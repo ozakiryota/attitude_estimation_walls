@@ -6,7 +6,7 @@
 	<node pkg="rosbag" type="play" name="player" args="--clock /home/amsl/ozaki/bagfiles/stick_vlp32imu4cam/with_vicon/20201213_183636.bag"/>
 
 	<!-- rviz -->
-	<node pkg="rviz" type="rviz" name="rviz" args="-d $(find attitude_estimation_walls)/rviz_config/attitude_estimation_walls.rviz"/>
+	<node pkg="rviz" type="rviz" name="rviz" args="-d $(find attitude_estimation_walls)/rviz_config/dgsphere_real.rviz"/>
 
 	<!-- velodyne -->
 	<include file="$(find velodyne_pointcloud)/launch/VLP-32C_points.launch"/>
@@ -16,7 +16,7 @@
 		<remap from="/cloud" to="/velodyne_points"/>
 		<remap from="/quat" to="/ekf/quat_rpy"/>
 		<!-- <param name="mode_open_viewer" type="bool" value="false"/> -->
-		<param name="omp_num_threads" type="int" value="3"/>
+		<param name="omp_num_threads" type="int" value="4"/>
 		<param name="skip" type="int" value="3"/>
 		<param name="search_radius_ratio" type="double" value="0.09"/>
 		<param name="min_search_radius" type="double" value="0.1"/>
@@ -27,6 +27,7 @@
 		<remap from="/cloud" to="/dgsphere/selected"/>
 		<remap from="/quat" to="/ekf/quat_rpy"/>
 		<param name="min_num_cluster_members" type="int" value="20"/>
+		<param name="th_anglediff_gnew_glast_deg" type="double" value="20.0"/>
 	</node>
 	<node pkg="attitude_estimation_walls" name="ekf_gyro_dgsphere" type="ekf_gyro_dgsphere" output="screen">
 		<param name="wait_inipose" type="bool" value="false"/>
