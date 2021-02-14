@@ -5,6 +5,7 @@
 #include <tf/tf.h>
 #include <Eigen/Core>
 #include <Eigen/LU>
+#include <std_msgs/String.h>
 
 class EKFGyroDgsphereDNN{
 	private:
@@ -20,6 +21,7 @@ class EKFGyroDgsphereDNN{
 		/*publisher*/
 		ros::Publisher _pub_quat_rp;
 		ros::Publisher _pub_quat_rpy;
+		ros::Publisher _pub_vis_text;
 		/*state*/
 		Eigen::Vector2d _x;
 		Eigen::Matrix2d _P;
@@ -91,6 +93,7 @@ EKFGyroDgsphereDNN::EKFGyroDgsphereDNN()
 	/*publisher*/
 	_pub_quat_rp = _nh.advertise<geometry_msgs::QuaternionStamped>("/ekf/quat_rp", 1);
 	_pub_quat_rpy = _nh.advertise<geometry_msgs::QuaternionStamped>("/ekf/quat_rpy", 1);
+	_pub_vis_text = _nh.advertise<std_msgs::String>("/vis_text_rviz", 1);
 	/*initialize*/
 	initializeState();
 	_obs_counter = std::vector<int>(3, 0);	//{imu, lidar, camera}
@@ -282,6 +285,9 @@ bool EKFGyroDgsphereDNN::varIsSmallEnough(sensor_msgs::Imu g_msg)
 		*sqrt(g_msg.linear_acceleration_covariance[8]);
 	if(mul_sigma > _th_mul_sigma){
 		std::cout << "REJECT: mul_sigma = " << mul_sigma << " > " << _th_mul_sigma << std::endl;
+		std_msgs::String string_msg;
+		string_msg.data = std::string("REJECTED");
+		_pub_vis_text.publish(string_msg);
 		return false;
 	}
 	std::cout << "mul_sigma = " << mul_sigma << std::endl;

@@ -66,7 +66,7 @@ DgsphereToGravity::DgsphereToGravity()
 	_sub_quat = _nh.subscribe("/quat", 1, &DgsphereToGravity::callbackQuat, this);
 	/*publisher*/
 	_pub_vector = _nh.advertise<geometry_msgs::Vector3Stamped>("/lidar/g_vector", 1);
-	_pub_markerarray = _nh.advertise<visualization_msgs::MarkerArray>("/dgsphere/clustered", 1);
+	_pub_markerarray = _nh.advertise<visualization_msgs::MarkerArray>("/vis/dgsphere/clustered", 1);
 }
 
 void DgsphereToGravity::callbackPC(const sensor_msgs::PointCloud2ConstPtr &msg)
@@ -254,27 +254,27 @@ void DgsphereToGravity::inputMarkerArray(std_msgs::Header header)
 		_arrows.markers.push_back(tmp);
 	}
 	/*gravity*/
-	const double shaft_diameter_g = 0.5;
-	const double head_diameter_g = 0.75;
-	if(_g_is_available){
-		const double gravity_lengh = 10.0;
-		visualization_msgs::Marker gravity;
-		gravity.header = header;
-		gravity.ns = "gravity";
-		gravity.type = visualization_msgs::Marker::ARROW;
-		gravity.action = visualization_msgs::Marker::ADD;
-		gravity.scale.x = shaft_diameter_g;
-		gravity.scale.y = head_diameter_g;
-		gravity.color.g = 1.0;
-		gravity.color.a = 1.0;
-		geometry_msgs::Point end;
-		end.x = _g_vector(0)*gravity_lengh;
-		end.y = _g_vector(1)*gravity_lengh;
-		end.z = _g_vector(2)*gravity_lengh;
-		gravity.points.push_back(start);
-		gravity.points.push_back(end);
-		_arrows.markers.push_back(gravity);
-	}
+	// const double shaft_diameter_g = 0.5;
+	// const double head_diameter_g = 0.75;
+	// if(_g_is_available){
+	//	const double gravity_lengh = 10.0;
+	//	visualization_msgs::Marker gravity;
+	//	gravity.header = header;
+	//	gravity.ns = "gravity";
+	//	gravity.type = visualization_msgs::Marker::ARROW;
+	//	gravity.action = visualization_msgs::Marker::ADD;
+	//	gravity.scale.x = shaft_diameter_g;
+	//	gravity.scale.y = head_diameter_g;
+	//	gravity.color.g = 1.0;
+	//	gravity.color.a = 1.0;
+	//	geometry_msgs::Point end;
+	//	end.x = _g_vector(0)*gravity_lengh;
+	//	end.y = _g_vector(1)*gravity_lengh;
+	//	end.z = _g_vector(2)*gravity_lengh;
+	//	gravity.points.push_back(start);
+	//	gravity.points.push_back(end);
+	//	_arrows.markers.push_back(gravity);
+	// }
 }
 
 double DgsphereToGravity::getAngleBetweenVectors(const Eigen::Vector3d& v1, const Eigen::Vector3d& v2)

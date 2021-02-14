@@ -63,4 +63,7 @@
 
 	<!-- evaluation -->
 	<include file="$(find attitude_estimation_walls)/launch/comparison_with_gt_airsim.launch"/>
+
+	<!-- visualization -->
+	<include file="$(find attitude_estimation_walls)/launch/visualize_marker_airsim.launch"/>
 </launch>
